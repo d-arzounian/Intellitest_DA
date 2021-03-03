@@ -1,0 +1,630 @@
+function varargout = IPD(varargin)
+% IPD M-file for IPD.fig
+%      IPD, by itself, creates a new IPD or raises the existing
+%      singleton*.
+%
+%      H = IPD returns the handle to a new IPD or the handle to
+%      the existing singleton*.
+%
+%      IPD('CALLBACK',hObject,eventData,handles,...) calls the local
+%      function named CALLBACK in IPD.M with the given input arguments.
+%
+%      IPD('Property','Value',...) creates a new IPD or raises the
+%      existing singleton*.  Starting from the left, property value pairs are
+%      applied to the GUI before IPD_OpeningFcn gets called.  An
+%      unrecognized property name or invalid value makes property application
+%      stop.  All inputs are passed to IPD_OpeningFcn via varargin.
+%
+%      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
+%      instance to run (singleton)".
+%
+% See also: GUIDE, GUIDATA, GUIHANDLES
+
+% Edit the above text to modify the response to help IPD
+
+% Last Modified by GUIDE v2.5 10-Jan-2014 10:00:48
+
+% Begin initialization code - DO NOT EDIT
+gui_Singleton = 1;
+gui_State = struct('gui_Name',       mfilename, ...
+                   'gui_Singleton',  gui_Singleton, ...
+                   'gui_OpeningFcn', @IPD_OpeningFcn, ...
+                   'gui_OutputFcn',  @IPD_OutputFcn, ...
+                   'gui_LayoutFcn',  [] , ...
+                   'gui_Callback',   []);
+if nargin && ischar(varargin{1})
+    gui_State.gui_Callback = str2func(varargin{1});
+end
+
+if nargout
+    [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
+else
+    gui_mainfcn(gui_State, varargin{:});
+end
+% End initialization code - DO NOT EDIT
+
+
+% --- Executes just before IPD is made visible.
+function IPD_OpeningFcn(hObject, eventdata, handles, varargin)
+% This function has no output args, see OutputFcn.
+% hObject    handle to figure
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% varargin   command line arguments to IPD (see VARARGIN)
+
+% Choose default command line output for IPD
+
+handles.output = hObject;
+h0 = cell2struct(varargin,'Parametres',2);
+handles.Parametres = h0.Parametres;
+
+routine_alloff(handles);
+
+
+handles.Fs=44100;    %sampling frequency
+handles.level = handles.Parametres.level;
+
+
+%%%% amplification
+
+if handles.Parametres.Aud,
+   if handles.ampli==1;
+   audiofilt=routine_CAMFIT2(handles);    
+   elseif handles.ampli==2;
+   audiofilt=routine_CAMFIT(handles);
+   end
+end
+
+
+% handles.mat = zeros(handles.NbLog,handles.NbLog);
+handles.perf = [];
+
+cd(handles.Parametres.StimRep);
+handles.d = dir;
+cd(handles.Parametres.ProgRep);
+
+if handles.Parametres.RSB==10000,
+    set(handles.TxtAccueil,'String',strvcat('Test IPD dans le silence','Sélectionner les paramètres puis cliquez sur Démarrer pour commencer    '));
+else
+    set(handles.TxtAccueil,'String',strvcat('Test IPD dans le bruit', ' ','Sélectionner les paramètres puis cliquez sur Démarrer pour commencer    '));
+    %set(handles.TxtAccueil,'String',strvcat('Test Consonnes      ', 'Dans le silence     ', ' ', 'Cliquez sur Démarrer', 'pour commencer      '));
+end
+
+cd Bruits
+handles.masker=wavread(handles.Parametres.SSN);
+cd ..
+
+if exist('Data.log','file')~=0,
+    load -mat Data.log
+    if isfield(Data,'Plugins'), handles.Plugins = Data.Plugins;
+    else handles.Plugins = {'','',''}; end
+else
+    handles.Plugins = {'','',''};
+end
+
+set(handles.TxtAccueil,'HorizontalAlignment','center');
+set(handles.TxtAccueil,'Visible','on');
+set(handles.Txtalarm,'Visible','off');
+set(handles.Result,'Visible','off');
+set(handles.Score1,'Visible','off');
+set(handles.Score2,'Visible','off');
+set(handles.Score3,'Visible','off');
+% set(handles.Score4,'Visible','off');
+% set(handles.Score5,'Visible','off');
+% set(handles.Score6,'Visible','off');
+% set(handles.Score7,'Visible','off');
+% set(handles.Score8,'Visible','off');
+% set(handles.Score9,'Visible','off');
+set(handles.Sound1,'Enable','off');
+set(handles.Sound2,'Enable','off');
+set(handles.Sound3,'Enable','off');
+
+
+% % % % % % % % % % % % % % % % 
+% % % % % % % % % % % % % % % % handles.Nom_fichier = input('Comment voulez vous nommer ce fichier ?   ','s');
+% % % % % % % % % % % % % % % % handles.fm = input('fréquence de modulation?   ');
+% % % % % % % % % % % % % % % % handles.fp = input('fréquence porteuse?   ');
+% % % % % % % % % % % % % % % % 
+% % % % % % % % % % % % % % % % handles.Reponse = 0;
+% % % % % % % % % % % % % % % % 
+% % % % % % % % % % % % % % % % if exist('Data.log','file')
+% % % % % % % % % % % % % % % %     load -mat Data.log
+% % % % % % % % % % % % % % % %     if isfield(Data,'Levels'), handles.Levels = Data.Levels; handles.error=0;
+% % % % % % % % % % % % % % % %     else disp('Fichier etalon corrompu!!');
+% % % % % % % % % % % % % % % %     end%handles.Plugs = {'none','none','none'}; end
+% % % % % % % % % % % % % % % %     %handles.Levels=Data.Levels;
+% % % % % % % % % % % % % % % %     %handles.error=0;
+% % % % % % % % % % % % % % % % else
+% % % % % % % % % % % % % % % %     disp('Etalonner!!')
+% % % % % % % % % % % % % % % %     close;
+% % % % % % % % % % % % % % % % end
+% UIWAIT makes IPD wait for user response (see UIRESUME)
+% uiwait(handles.figure1);
+
+% Update handles structure
+guidata(hObject, handles);
+uiwait(handles.figure1);
+
+
+function filtre=routine_CAMFIT2(handles)
+Audiog = -handles.Parametres.Audiog;
+
+gabarit_dB=[-100 (Audiog(1)) (Audiog(1)) (Audiog(2)) (Audiog(3)) (Audiog(4)) (Audiog(5)) (Audiog(6)) (Audiog(7)) -100 -100];
+
+gabarit_freq=[2.*[0 125 250 500 1000 2000 3000 4000 8000 10000] handles.Fs]./handles.Fs;
+
+filtre=fir2(4096,gabarit_freq,10.^(gabarit_dB/20));
+
+
+function filtre=routine_CAMFIT(handles)
+Audiog = -handles.Parametres.Audiog;
+
+gabarit_dB=[-100 (Audiog(1)*0.48-11) (Audiog(1)*0.48-10) (Audiog(2)*0.48-8) (Audiog(3)*0.48) (Audiog(4)*0.48+1) (Audiog(5)*0.48-1) (Audiog(6)*0.48) (Audiog(7)*0.48+1) -100 -100];
+
+gabarit_freq=[2.*[0 125 250 500 1000 2000 3000 4000 8000 10000] handles.Fs]./handles.Fs;
+
+filtre=fir2(4096,gabarit_freq,10.^(gabarit_dB/20));
+
+
+function routine_alloff(handles)
+set(handles.Sound1,'Enable','off');
+set(handles.Sound2,'Enable','off');
+set(handles.Sound3,'Enable','off');
+
+
+% --- Outputs from this function are returned to the command line.
+function varargout = IPD_OutputFcn(hObject, eventdata, handles) 
+% varargout  cell array for returning output args (see VARARGOUT);
+% hObject    handle to figure
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Get default command line output from handles structure
+varargout{1} = handles.output;
+
+
+
+% --- Executes on button press in Sound1.
+function Sound1_Callback(hObject, eventdata, handles)
+% hObject    handle to Sound1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.Reponse=1;
+guidata(hObject, handles);
+uiresume;
+
+
+
+% --- Executes on button press in Sound2.
+function Sound2_Callback(hObject, eventdata, handles)
+% hObject    handle to Sound2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+handles.Reponse=2;
+guidata(hObject, handles);
+uiresume;
+
+
+% --- Executes on button press in Start.
+function Start_Callback(hObject, eventdata, handles)
+% hObject    handle to Start (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+set(hObject,'Enable','off');
+set(hObject,'Visible','off');
+set(handles.TxtAccueil,'Visible','off');
+set(handles.Condition,'Enable','off');
+set(handles.Sound1,'Enable','on');
+set(handles.Sound2,'Enable','on');
+set(handles.Sound3,'Enable','on');
+
+%%%%%%%%%%%%%%%%%%% Ouverture du fichier de calibration %%%%%%%%%%%%%%%%%%   
+    if exist('Data1000.log','file')
+    load -mat Data1000.log
+    if isfield(Data,'Levels'), handles.Levels = Data.Levels; handles.error=0;
+    else handles.error=1; end%handles.Plugs = {'none','none','none'}; 
+    end    
+
+
+set(hObject,'Enable','off');    % Supprimer le bouton Start après pression
+
+
+if handles.level==40, handles.Scale=handles.Levels.Sc40dB;
+elseif handles.level==45, handles.Scale=handles.Levels.Sc45dB;
+elseif handles.level==50, handles.Scale=handles.Levels.Sc50dB;
+elseif handles.level==55, handles.Scale=handles.Levels.Sc55dB;
+elseif handles.level==60, handles.Scale=handles.Levels.Sc60dB;
+elseif handles.level==65, handles.Scale=handles.Levels.Sc65dB;
+elseif handles.level==70, handles.Scale=handles.Levels.Sc70dB;
+elseif handles.level==75, handles.Scale=handles.Levels.Sc75dB;
+elseif handles.level==80, handles.Scale=handles.Levels.Sc80dB;
+elseif handles.level==90, handles.Scale=handles.Levels.ScCL;
+end
+
+Scale=handles.Scale;
+Fs = 44100;
+% low_cf=80; % low cutoff frequency for audio filtering 
+% high_cf=8000; % high cutoff frequency for audio filtering 
+
+% rand('state',sum(100*clock));
+% 
+% fp=handles.fp;      % carrier frequency
+fm=5;       % modulation frequency
+dt = 0.8;        % lenght of target and standard
+
+duree_targ = dt*Fs;    % target duration
+duree_stand = dt*Fs;   % standard duration = 1 sec
+
+t_stim = 1:duree_targ;
+amp=1;
+m=1;                   %Modulation depth starting value = 1
+
+
+%silent interval parameters
+duree_sil = 0.5*Fs;     %silence duration = 0.5 sec
+silence = zeros(duree_sil,1);
+
+%2I2AFC parameters
+nb_essais_max = 150;
+Tab_freq = zeros(nb_essais_max,1); % création tableau remplis de 0 à 1 colonne et autant de ligne que le nb d'essai max
+
+Essais_corrects = 0;
+Nb_inversions = 0;
+max_inversions_1  = 2;   %nb d'inversion avant modification du pas
+max_inversions_2 = 6;  % nb d'inversion avec le pas final
+
+dB_down_1 = 1.189207115;          % pas initial de 1/4 d'octave  == 1 octave = log2(2)
+% dB_down_2 = 2;          % pas final en dB/ final step adaptive staircase
+
+% lin_down_1 = 10.^(dB_down_1/20);    
+% lin_down_2 = 10.^(dB_down_2/20);
+
+
+%initialisation loop
+Facteur_down = dB_down_1;      % départ avec pas initial
+Essai = 0;
+%handles.Reponse = 0;
+Nb_trials = 0;
+Nb_correct_trials = 0;
+
+% modulante
+mod=sin(2*pi*fm*t_stim./Fs + 3*pi/2);
+
+%ramps
+duree_ramp = 0.2*Fs; 
+on = ones(1,duree_ramp);
+off = zeros(1,duree_ramp);
+ramp_vector1 = [off on off on];
+ramp_vector2 = [on off on off];
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+fp = 500;
+while Essai<nb_essais_max
+    Essai = Essai + 1;
+
+    Tab_freq(Essai) = fp;
+    
+    modulation_standard = (1 + m.*mod).*sin(2*pi*fp*t_stim./Fs + 0); %modulation standard  
+    modulation_standard = modulation_standard ./ sqrt(mean(modulation_standard.^2)); % Normalisation RMS
+    modulation_standard = modulation_standard ./ Scale; % Mettre le bruit au dB SPL voulu (fixe)
+    
+    if handles.condition == 1;              % Condition diochotique - tracking en fréquence
+    modulation_target1 = (1 + m.*mod).*sin(2*pi*fp*t_stim./Fs + 0);
+    modulation_target2 = (1 + m.*mod).*sin(2*pi*fp*t_stim./Fs + pi);
+    modulation_target1 = modulation_target1.*ramp_vector1 ;
+    modulation_target2 = modulation_target2.*ramp_vector2 ;
+    modulation_target = modulation_target1 + modulation_target2;
+    
+    elseif handles.condition == 2;          % Condition diochotique - tracking du delta t
+    modulation_target1 = (1 + m.*mod).*sin(2*pi*fp*t_stim./Fs + 0);
+    modulation_target2 = (1 + m.*mod).*sin(2*pi*fp*t_stim./Fs + 0);
+    modulation_target1 = modulation_target1.*ramp_vector1 ;
+    modulation_target2 = modulation_target2.*ramp_vector2 ;
+    modulation_target = modulation_target1 + modulation_target2;   
+    end
+
+    modulation_target = modulation_target ./ sqrt(mean(modulation_target.^2)); % Normalisation RMS
+    modulation_target = modulation_target ./ Scale; % Mettre le bruit au dB SPL voulu (fixe) 
+
+%%%%%%%%%%% Sound presentation %%%%%%%%%%%    
+    
+    if handles.Parametres.Aud, target = filter(handles.audiofilt,1,target);end
+        
+    if rand(1,1)<0.5
+
+    right_ear1=[modulation_target];
+    left_ear1=[modulation_standard];        
+
+    switch(lower(getenv('computername')))
+    case({'petitecabine' 'grandecabine'})
+    tplay([left_ear1' right_ear1],Fs);
+        otherwise
+    set(handles.text2,'string','Ecoutez');
+    set(handles.Sound1,'BackgroundColor',[79/255 129/255 189/255]);   drawnow;
+    wavplay([left_ear1' right_ear1'],Fs);
+    set(handles.Sound1,'BackgroundColor',[240/255 240/255 240/255]) ; drawnow;  
+    end    
+    
+    right_ear2=[silence'];
+    left_ear2=zeros(length(right_ear2),1);  
+
+    switch(lower(getenv('computername')))
+    case({'petitecabine' 'grandecabine'})
+        tplay([left_ear2' right_ear2],Fs);
+    otherwise
+        wavplay([left_ear2' right_ear2],Fs);
+    end        
+    
+    
+    right_ear3=[modulation_standard];
+    left_ear3=[modulation_standard];         
+        
+    switch(lower(getenv('computername')))
+    case({'petitecabine' 'grandecabine'})
+        tplay([left_ear3' right_ear3'],Fs); 
+    otherwise
+    set(handles.Sound2,'BackgroundColor',[79/255 129/255 189/255]);  drawnow;      
+        wavplay([left_ear3' right_ear3'],Fs);
+    set(handles.Sound2,'BackgroundColor',[240/255 240/255 240/255]) ;   drawnow;
+    set(handles.text2,'string','Lequel des deux sons contient la tonalité?');
+    end            
+reponse_correcte = 1;
+ 
+
+    else
+
+    right_ear1=[modulation_standard];
+    left_ear1=[modulation_standard];        
+
+    switch(lower(getenv('computername')))
+    case({'petitecabine' 'grandecabine'})
+    tplay([left_ear1' right_ear1],Fs);
+        otherwise
+    set(handles.text2,'string','Ecoutez');
+    set(handles.Sound1,'BackgroundColor',[79/255 129/255 189/255]);   drawnow;
+    wavplay([left_ear1' right_ear1'],Fs);
+    set(handles.Sound1,'BackgroundColor',[240/255 240/255 240/255]) ; drawnow;  
+    end    
+    
+    right_ear2=[silence'];
+    left_ear2=zeros(length(right_ear2),1);  
+
+    switch(lower(getenv('computername')))
+    case({'petitecabine' 'grandecabine'})
+        tplay([left_ear2' right_ear2],Fs);
+    otherwise
+        wavplay([left_ear2' right_ear2],Fs);
+    end        
+    
+    
+    right_ear3=[modulation_target];
+    left_ear3=[modulation_standard];         
+        
+    switch(lower(getenv('computername')))
+    case({'petitecabine' 'grandecabine'})
+        tplay([left_ear3' right_ear3],Fs); 
+    otherwise
+    set(handles.Sound2,'BackgroundColor',[79/255 129/255 189/255]);  drawnow;      
+        wavplay([left_ear3' right_ear3'],Fs);
+    set(handles.Sound2,'BackgroundColor',[240/255 240/255 240/255]) ;   drawnow;
+    set(handles.text2,'string','Lequel des deux sons contient la tonalité?');
+    end                    
+    reponse_correcte = 2;
+    end
+
+
+%      while handles.Reponse == 0
+%          pause(1);
+%      end
+%Reponse = input('1 ou 2');
+uiwait;
+handles = guidata(hObject);
+    
+    %Feedback
+    if handles.Reponse == reponse_correcte
+        Rep = 'OUI'; Rep_inv = 1;
+    else
+        Rep = 'NON'; Rep_inv = 0;
+    end
+    
+    if (handles.Reponse==1) & (Rep == 'OUI')
+        %display('OUI Reponse 1 correcte');
+        set(handles.Sound1,'BackgroundColor',[146/255 208/255 80/255]);
+        pause(1)
+        set(handles.Sound1,'BackgroundColor',[240/255 240/255 240/255]);
+        pause(0.5)
+    elseif(handles.Reponse==1) & (Rep == 'NON')
+        %display('NON Reponse 2 correcte');
+        set(handles.Sound2,'BackgroundColor',[204/255 0/255 0/255]);
+        pause(1)
+        set(handles.Sound2,'BackgroundColor',[240/255 240/255 240/255]);
+        pause(0.5)
+    elseif(handles.Reponse==2) & (Rep == 'OUI')
+        %display('OUI reponse 2 correcte');
+        set(handles.Sound2,'BackgroundColor',[146/255 208/255 80/255]);
+        pause(1)
+        set(handles.Sound2,'BackgroundColor',[240/255 240/255 240/255]);
+        pause(0.5)
+    elseif(handles.Reponse==2) & (Rep == 'NON');
+        %display('NON Reponse 1 correcte');
+        set(handles.Sound1,'BackgroundColor',[204/255 0/255 0/255]);
+        pause(1)
+        set(handles.Sound1,'BackgroundColor',[240/255 240/255 240/255]);
+        pause(0.5)
+    end
+    
+    %calculation of inversions
+    if Essai ==1,
+        Rep1=Rep_inv;
+        Rep2=Rep_inv;
+    end
+    
+    Rep3 = Rep2;
+    Rep2 = Rep1;
+    Rep1 = Rep_inv;
+    
+    Vector = [Rep3 Rep2 Rep1]; %keep the last 3 answers
+    inv1=[1 1 0];   %valley in staircaise
+    inv2=[0 1 1];   %peak in staircase
+    
+    test1 = (Vector == inv1);
+    test2 = (Vector == inv2);
+    S=(sum(test1) == 3);
+    T=(sum(test2) == 3);
+    
+    if xor(S,T)
+        Nb_inversions = Nb_inversions + 1;
+        Tab_inv(Nb_inversions) = fp;
+    end
+    
+    %go from step 1 to step 2 in staicase
+%     if Nb_inversions == max_inversions_1
+%         Facteur_down = dB_down_2;
+%     end
+    
+    %one up
+    if Rep == 'OUI'
+        Essais_corrects = Essais_corrects + 1;
+    else
+        Essais_corrects = 0;
+        fp = fp -(fp*Facteur_down);
+    end
+    
+    %Two down
+    if Essais_corrects == 2
+        fp = fp + (fp*Facteur_down);
+        Essais_corrects = 0;
+    end
+    
+    
+   %percent correct from 6th reversal
+   
+   if Nb_inversions > 6
+       Nb_trials = Nb_trials + 1;
+       if Rep == 'OUI'
+           Nb_correct_trials = Nb_correct_trials + 1;
+       end
+   else
+       Nb_trials = 0;
+       Nb_correct_trials = 0;
+   end
+   
+   
+   %final stop
+   if Nb_inversions == max_inversions_2
+       break
+   end
+   
+   handles.Reponse == 0;
+end
+
+% close;
+
+plot(Tab_fp)     %Tab_m adaptive staircase
+
+pause
+%%%%%%%%%%%%%%%%%%%%%%%
+set(handles.Score1,'Visible','on');
+set(handles.Score2,'Visible','on');
+set(handles.Score3,'Visible','on');
+set(handles.Sound1,'Visible','off');
+set(handles.Sound2,'Visible','off');
+set(handles.Sound3,'Visible','off');
+% set(handles.Score7,'Visible','on');
+% set(handles.Score8,'Visible','on');
+% set(handles.Score9,'Visible','on');
+
+handles.Seuil_arith =mean(Tab_inv(7:16));          % Moyenne de m
+handles.STD_Seuil = std(Tab_inv(7:16));            % Ecart type de m
+handles.Seuil_geo = (prod(Tab_inv(7:16))).^(1/10);
+% handles.Seuil_dBSPL =handles.level + mean(Tab_inv(7:16));          % Moyenne du seuil en dB
+
+handles.Essai=Essai;
+handles.perf = round((Nb_correct_trials./Nb_trials)*100);
+set(handles.Score1,'String',['moy_arith:  ',num2str(handles.Seuil_arith,'%6.2f'),'Hz']);
+set(handles.Score2,'String',['STD_arith:  ',num2str(handles.STD_Seuil,'%6.2f'),'Hz']);
+set(handles.Score3,'String',['moy_geo:  ',num2str(handles.Seuil_geo,'%6.2f'),'Hz']);
+% set(handles.Score4,'String',['Essai:  ',num2str(handles.Essai,'%6.2f')]);
+% set(handles.Score5,'String',['Perf:  ',num2str(handles.perf,'%6.2f'),'%']);
+% set(handles.Score7,'String',['Seuil_dBSPL:  ',num2str(handles.Seuil_dBSPL,'%6.2f'),'dBSPL']);
+% set(handles.Score8,'String',['Niv_bruit:  ',num2str(handles.level,'%6.2f'),'dBSPL']);
+% set(handles.Score8,'String',['STD_seuil:  ',num2str(handles.STD_SeuildB,'%6.2f'),'dB']);
+% set(handles.Score9,'String',['Seuil_geo:  ',num2str(handles.Seuil_geodB,'%6.2f'),'dB']);
+
+
+% handles.Seuil_arith =mean(Tab_inv(7:16)) *100;
+% handles.STD_Seuil = std(Tab_inv(7:16))  *100;
+% handles.Seuil_geo = (prod(Tab_inv(7:16))).^(1/10) *100;
+% handles.Essai=Essai;
+% 
+% handles.perf = round((Nb_correct_trials./Nb_trials)*100);
+% 
+% handles.mat = [handles.Seuil_arith handles.STD_Seuil handles.Seuil_geo handles.Essai handles.perf Tab_gain'];
+
+% cd resultats
+% c=clock;
+% save(strcat(handles.Nom_fichier,'_',num2str(fm),'_',num2str(c(4)),'-',num2str(c(5)), '.txt'), 'mat','-ascii')
+% cd ..
+
+% handles.output=struct('results',[handles.Seuil_arith handles.STD_Seuil handles.Seuil_geo handles.perf],'mat',handles.mat);
+% handles.output=struct('results',[Seuil_arith STD_Seuil Seuil_geo Essai perf Tab_m'],'mat',handles.mat);
+pause;
+handles.task='IPD';
+mat = [Tab_freq'];
+    
+handles.Nom = handles.Parametres.Code;
+
+handles.output=struct('results',[handles.Seuil_arith handles.STD_Seuil handles.Seuil_geo handles.Essai handles.perf],'param',[handles.task]);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+cd Resultats
+save(strcat(handles.Nom,'_',handles.task, '.txt'), 'mat','-ascii')
+cd ..
+
+guidata(hObject, handles)
+ uiresume(handles.figure1)
+
+
+
+
+
+% --- Executes on selection change in Condition.
+function Condition_Callback(hObject, eventdata, handles)
+% hObject    handle to Condition (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = get(hObject,'String') returns Condition contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from Condition
+if get(hObject,'Value')==2, handles.condition=1; % dichotique
+elseif get(hObject,'Value')==3, handles.condition=2; % diotique
+end
+guidata(hObject, handles);
+
+
+
+% --- Executes during object creation, after setting all properties.
+function Condition_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to Condition (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in Sound3.
+function Sound3_Callback(hObject, eventdata, handles)
+% hObject    handle to Sound3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
