@@ -490,6 +490,14 @@ function Stim_Callback(hObject, eventdata, handles)
 % hObject    handle to Stim (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+if hObject.Value == 2
+    % 'Consonnes' stimuli selected, allow Tobii recording option for VCV
+    handles.TobiiCheckbox.Value = true;
+    handles.TobiiCheckbox.Enable = 'on';
+else
+    handles.TobiiCheckbox.Value = false;
+    handles.TobiiCheckbox.Enable = 'off';
+end
 
 % Hints: contents = get(hObject,'String') returns Stim contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from Stim

@@ -20,8 +20,12 @@ function varargout = intellitest(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES   
 %
-% Edit the above t'ext to modify the response to help intellitest
+% Edit the above text to modify the response to help intellitest
 
+% 04-Mar-2021 - Removed unnecessary commas, new callback to TobiiCheckbox
+% after adding the corresponding uicontrol in intellitest.fig - Dorothée
+% Arzounian
+%
 % Last Modified by GUIDE v2.5 04-Mar-2021 13:17:49
 
 % Begin initialization code - DO NOT EDIT
@@ -486,6 +490,10 @@ function Stim_Callback(hObject, eventdata, handles)
 % hObject    handle to Stim (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+if hObject.Value == 2
+    % 'Consonnes' stimuli selected, allow Tobii recording option for VCV
+    handles.TobiiCheckbox.Value = true;
+    handles.TobiiCheckbox.enable = true;
 
 % Hints: contents = get(hObject,'String') returns Stim contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from Stim
@@ -1088,7 +1096,7 @@ handles.Seuilarith=out.results(1);handles.STDarith=out.results(2);handles.seuilg
 
 function handles=routine_IPD(handles)
 ssn=strcat(handles.BType,'_V.wav');
-if exist('Data.log','file')~=0,
+if exist('Data.log','file')~=0
     load -mat Data.log
     if isfield(Data,'StimRep'), Rep = strcat('Stimuli\' , Data.StimRep, '\CVC');
     else Rep = {'Stimuli\Default\CVC'}; end
@@ -1107,7 +1115,7 @@ handles.Seuilarith=out.results(1);handles.STDarith=out.results(2);handles.seuilg
 
 function handles=routine_ModDetectGUI(handles)
 ssn=strcat(handles.BType,'_V.wav');
-if exist('Data.log','file')~=0,
+if exist('Data.log','file')~=0
     load -mat Data.log
     if isfield(Data,'StimRep'), Rep = strcat('Stimuli\' , Data.StimRep, '\CVC');
     else Rep = {'Stimuli\Default\CVC'}; end
@@ -1126,7 +1134,7 @@ handles.Seuilarith=out.results(1);handles.STDarith=out.results(2);handles.seuilg
 
 function handles=routine_Integration_ModDetect(handles)
 ssn=strcat(handles.BType,'_V.wav');
-if exist('Data.log','file')~=0,
+if exist('Data.log','file')~=0
     load -mat Data.log
     if isfield(Data,'StimRep'), Rep = strcat('Stimuli\' , Data.StimRep, '\CVC');
     else Rep = {'Stimuli\Default\CVC'}; end
@@ -1172,7 +1180,7 @@ tmp=get(handles.Sexe,'String');
 sx=char(tmp(get(handles.Sexe,'Value')));
 tmp=get(handles.Oreille,'String');
 or=char(tmp(get(handles.Oreille,'Value')));
-if get(handles.Info,'Value')==6,
+if get(handles.Info,'Value')==6
     ss=get(handles.InfoTxt,'String');
 else
     tmp=get(handles.Info,'String');
@@ -1195,7 +1203,7 @@ elseif get(handles.Spectro,'Value'), bb='BFluctSpectro';
 elseif get(handles.SpectroTempo,'Value'), bb='BFluctSpectroTempo';
 end
 
-if get(handles.AudOn,'Value'),
+if get(handles.AudOn,'Value')
     aa='ON';
     AudioDdBtmp=handles.AudioDdB;
     AudioGdBtmp=handles.AudioGdB;
@@ -1205,7 +1213,7 @@ else
     AudioGdBtmp=['X' 'X' 'X' 'X' 'X' 'X' 'X'];
 end
 
-if get(handles.Stim,'Value')==2,
+if get(handles.Stim,'Value')==2
     resultats_mat=struct('Code',get(handles.Code,'String'),'Date',date,...
                      'DateDeNaissance',[get(handles.Jour,'String'),'/',get(handles.Mois,'String'),'/',get(handles.Annee,'String')],...
                      'Sexe',sx,'TypeSurdite',ss,'Oreille',or,'ControleAudibilite',aa,...
@@ -1220,7 +1228,7 @@ if get(handles.Stim,'Value')==2,
 %                    sx,ss,or,aa,AudioDdBtmp(1),AudioDdBtmp(2),AudioDdBtmp(3),AudioDdBtmp(4),AudioDdBtmp(5),AudioDdBtmp(6),AudioGdBtmp(1),AudioGdBtmp(2),AudioGdBtmp(3),AudioGdBtmp(4),AudioGdBtmp(5),AudioGdBtmp(6),...
 %                    'VCVCV',bb,RAUCorr(handles.VCVp),handles.VCVv,handles.VCVl,handles.VCVm};
 %                
-elseif get(handles.Stim,'Value')==3,
+elseif get(handles.Stim,'Value')==3
     resultats_mat=struct('Code',get(handles.Code,'String'),'Date',date,...
                      'DateDeNaissance',[get(handles.Jour,'String'),'/',get(handles.Mois,'String'),'/',get(handles.Annee,'String')],...
                      'Sexe',sx,'TypeSurdite',ss,'Oreille',or,'ControleAudibilite',aa,...
@@ -1235,7 +1243,7 @@ elseif get(handles.Stim,'Value')==3,
 %                    sx,ss,or,aa,AudioDdBtmp(1),AudioDdBtmp(2),AudioDdBtmp(3),AudioDdBtmp(4),AudioDdBtmp(5),AudioDdBtmp(6),AudioGdBtmp(1),AudioGdBtmp(2),AudioGdBtmp(3),AudioGdBtmp(4),AudioGdBtmp(5),AudioGdBtmp(6),...
 %                    'CVCVC',bb,RAUCorr(handles.CVCp),'X','X','X'};
                
-elseif get(handles.Stim,'Value')==4,
+elseif get(handles.Stim,'Value')==4
     resultats_mat=struct('Code',get(handles.Code,'String'),'Date',date,...
                      'DateDeNaissance',[get(handles.Jour,'String'),'/',get(handles.Mois,'String'),'/',get(handles.Annee,'String')],...
                      'Sexe',sx,'TypeSurdite',ss,'Oreille',or,'ControleAudibilite',aa,...
@@ -1252,7 +1260,7 @@ elseif get(handles.Stim,'Value')==4,
                    'ModDetect',bb,handles.Seuilarith,handles.STDarith,handles.seuilgeo,handles.nbessai,handles.perf,handles.SeuilarithdB,handles.STDarithdB,handles.seuilgeodB,num2str(handles.freqm),num2str(handles.freqp),num2str(handles.dut),num2str(handles.task)};               
   
 
-elseif get(handles.Stim,'Value')==5,
+elseif get(handles.Stim,'Value')==5
     resultats_mat=struct('Code',get(handles.Code,'String'),'Date',date,...
                      'DateDeNaissance',[get(handles.Jour,'String'),'/',get(handles.Mois,'String'),'/',get(handles.Annee,'String')],...
                      'Sexe',sx,'TypeSurdite',ss,'Oreille',or,'ControleAudibilite',aa,...
@@ -1268,7 +1276,7 @@ elseif get(handles.Stim,'Value')==5,
                    handles.task,bb,handles.Seuilarith,handles.STDarith,handles.seuilgeo,handles.nbessai,handles.perf,handles.perfSPL,handles.level_std,handles.Seuil_geodB};               
 
          
-elseif get(handles.Stim,'Value')==6,
+elseif get(handles.Stim,'Value')==6
     resultats_mat=struct('Code',get(handles.Code,'String'),'Date',date,...
                      'DateDeNaissance',[get(handles.Jour,'String'),'/',get(handles.Mois,'String'),'/',get(handles.Annee,'String')],...
                      'Sexe',sx,'TypeSurdite',ss,'Oreille',or,'ControleAudibilite',aa,...
@@ -1284,7 +1292,7 @@ elseif get(handles.Stim,'Value')==6,
                    sx,ss,or,aa,AudioDdBtmp(1),AudioDdBtmp(2),AudioDdBtmp(3),AudioDdBtmp(4),AudioDdBtmp(5),AudioDdBtmp(6),AudioGdBtmp(1),AudioGdBtmp(2),AudioGdBtmp(3),AudioGdBtmp(4),AudioGdBtmp(5),AudioGdBtmp(6),...
                    'IPD',bb,handles.Seuilarith,handles.STDarith,handles.seuilgeo,handles.nbessai,handles.perf,handles.Seuilarithus,handles.STDarithus,handles.seuilgeous};         
 
-elseif get(handles.Stim,'Value')==7,
+elseif get(handles.Stim,'Value')==7
     resultats_mat=struct('Code',get(handles.Code,'String'),'Date',date,...
                      'DateDeNaissance',[get(handles.Jour,'String'),'/',get(handles.Mois,'String'),'/',get(handles.Annee,'String')],...
                      'Sexe',sx,'TypeSurdite',ss,'ControleAudibilite',aa,...
@@ -1299,7 +1307,7 @@ elseif get(handles.Stim,'Value')==7,
                    sx,ss,or,aa,AudioDdBtmp(1),AudioDdBtmp(2),AudioDdBtmp(3),AudioDdBtmp(4),AudioDdBtmp(5),AudioDdBtmp(6),AudioGdBtmp(1),AudioGdBtmp(2),AudioGdBtmp(3),AudioGdBtmp(4),AudioGdBtmp(5),AudioGdBtmp(6),...
                    'CMR',bb,handles.Seuilarith,handles.STDarith,handles.seuilgeo,handles.nbessai,handles.perf,handles.perfSPL,handles.level_std}; 
 
-elseif get(handles.Stim,'Value')==8,
+elseif get(handles.Stim,'Value')==8
     resultats_mat=struct('Code',get(handles.Code,'String'),'Date',date,...
                      'DateDeNaissance',[get(handles.Jour,'String'),'/',get(handles.Mois,'String'),'/',get(handles.Annee,'String')],...
                      'Sexe',sx,'TypeSurdite',ss,'Oreille',or,'ControleAudibilite',aa,...
@@ -1313,7 +1321,7 @@ end
 
 
 cd Resultats
-if exist('DataExp.mat','file')==0,
+if exist('DataExp.mat','file')==0
     data=struct(name,resultats_mat);
 else
     load DataExp.mat
@@ -1322,25 +1330,25 @@ end
 save DataExp.mat data
 
 
-    if get(handles.Stim,'Value')==5,
-        if exist('DataMLD.xls','file')==0,
+    if get(handles.Stim,'Value')==5
+        if exist('DataMLD.xls','file')==0
         xlswrite('DataMLD.xls', resultats_xls);
         else
         [num txt raw]=xlsread('DataMLD.xls');
         raw=[raw;resultats_xls(2,:)];
         xlswrite('DataMLD.xls', raw);
         end
-    elseif get(handles.Stim,'Value')==6,
-        if exist('DataIPD.xls','file')==0,
+    elseif get(handles.Stim,'Value')==6
+        if exist('DataIPD.xls','file')==0
         xlswrite('DataIPD.xls', resultats_xls);
         else
         [num txt raw]=xlsread('DataIPD.xls');
         raw=[raw;resultats_xls(2,:)];
         xlswrite('DataIPD.xls', raw);
         end
-    elseif get(handles.Stim,'Value')==7,
+    elseif get(handles.Stim,'Value')==7
 
-        if exist('DataCMR.xls','file')==0,
+        if exist('DataCMR.xls','file')==0
         xlswrite('DataCMR.xls', resultats_xls);
         else
         [num txt raw]=xlsread('DataCMR.xls');
@@ -1389,10 +1397,10 @@ set(handles.AudiogG,'YTick',[-80 -70 -60 -50 -40 -30 -20 -10 0])
 set(handles.AudiogG,'YTickLabel',{'-80','','-60','','-40','','-20','','0'})
 grid on
     
-while outG==0,
+while outG==0
 [xx,yy]=ginput(1);
 qq=isempty(xx);
-if qq || (xx<-0.5) || (xx>6.5) || (yy>10) || (yy<-90),
+if qq || (xx<-0.5) || (xx>6.5) || (yy>10) || (yy<-90)
     outG=1;
     plot([0 1 2 3 4 5 6],handles.AudioGdB,'rx-','LineWidth',3,'MarkerSize',15);
     %plot(x,y,'rx-','LineWidth',3,'MarkerSize',15);
@@ -1405,22 +1413,22 @@ if qq || (xx<-0.5) || (xx>6.5) || (yy>10) || (yy<-90),
     grid on
 else    
     xx=round(xx);
-    if xx<0, xx=0;end;
+    if xx<0, xx=0;end
     if xx>6, xx=6;end
     
     yy=round(yy/5)*5;
-    if yy>0, yy=0;end;
+    if yy>0, yy=0;end
     if yy<-80, yy=-80;end
     
     handles.AudioGdB(xx+1)=yy;
     DonePointsG(xx+1)=1;
     %plot([0 1 2 3 4 5],handles.AudioGdB,'rx-','LineWidth',3,'MarkerSize',15);
     %hold on
-    for k=1:length(DonePointsG),
-        if DonePointsG(k)==1,
+    for k=1:length(DonePointsG)
+        if DonePointsG(k)==1
             plot(k-1,handles.AudioGdB(k),'rx-','LineWidth',3,'MarkerSize',15);
             hold on;
-        end;
+        end
     end
     hold off
     %plot(x,y,'rx-','LineWidth',3,'MarkerSize',15);
