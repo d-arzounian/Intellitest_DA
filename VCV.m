@@ -23,8 +23,13 @@ function varargout = VCV(varargin)
 % Edit the above text to modify the response to help VCV
 
 % Last Modified by GUIDE v2.5 08-Nov-2007 12:37:37
+%
 % Following modifications for update and extension for joint pupillometry
 % Changed 3 instances of wavread to audioread - 20-Nov-2019, D. Arzounian
+% 
+% 04-Mar-2021 - Added code for optional joint recording with Tobii -
+% Lightened response button callback function by moving redundant code to
+% ResponseButtonWasPressed helper function.
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -75,7 +80,7 @@ handles.Essai = 0;
 handles.Table = zeros(4,handles.NbSelect);
 handles.ontour = 0;
 handles.bip = audioread('ding.wav');
-[handles.a handles.b]=butter(6,8000/(0.5*handles.Fs)); % lowpass filtering at 36 dB/oct, fc=5kHz
+[handles.a, handles.b]=butter(6,8000/(0.5*handles.Fs)); % lowpass filtering at 36 dB/oct, fc=5kHz
 if handles.Parametres.Aud && handles.Parametres.Oreille == 2
     handles.audiofilt=routine_CAMFITD(handles);
 elseif handles.Parametres.Aud && handles.Parametres.Oreille == 3
@@ -94,7 +99,7 @@ handles.d = dir;
 cd(handles.Parametres.ProgRep);
 
 % MAJ panneau accueil
-if handles.Parametres.RSB==10000,
+if handles.Parametres.RSB==10000
     set(handles.TxtAccueil,'String',strvcat('Test Consonnes dans le silence         ', ' ','Cliquez sur Démarrer pour commencer    '));
 else
     set(handles.TxtAccueil,'String',strvcat('Test Consonnes dans le bruit           ', ' ','Cliquez sur Démarrer pour commencer    '));
@@ -105,7 +110,7 @@ cd Bruits
 handles.masker=audioread(handles.Parametres.SSN);
 cd ..
 
-if exist('Data1000.log','file')~=0,
+if exist('Data1000.log','file')~=0
     load -mat Data1000.log
     if isfield(Data,'Plugins'), handles.Plugins = Data.Plugins;
     else handles.Plugins = {'','',''}; end
@@ -123,6 +128,48 @@ uiwait(handles.figure1);
 % UIWAIT makes VCV wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
+% Initialize Tobii
+if handles.Parametres.TobiiRec
+    % Initialization of the communication with TobiiPro
+    % Add dependencies to path
+    mfilepath = fileparts(which(mfilename));
+    addpath([mfilepath,filesep,'TobiiPro.SDK.Matlab_1.8.0.21'])
+
+    % Get Eyetracker
+    clear TobiiSDK
+    TobiiSDK.Tobii = EyeTrackingOperations();
+    eyetracker_address = 'tet-tcp://169.254.159.211'; %'tet-tcp://172.28.195.1';
+    TobiiSDK.eyetracker = TobiiSDK.Tobii.get_eyetracker(eyetracker_address);
+    if isa(TobiiSDK.eyetracker,'EyeTracker')
+        disp(['Address:',TobiiSDK.eyetracker.Address]);
+        disp(['Name:',TobiiSDK.eyetracker.Name]);
+        disp(['Serial Number:',TobiiSDK.eyetracker.SerialNumber]);
+        disp(['Model:',TobiiSDK.eyetracker.Model]);
+        disp(['Firmware Version:',TobiiSDK.eyetracker.FirmwareVersion]);
+        disp(['Runtime Version:',TobiiSDK.eyetracker.RuntimeVersion]);
+    else
+        disp('Eye tracker not found!');
+    end           
+
+    % Initialize event count
+    TobiiSDK.EventCount = 0;
+    
+    % Create TobiiData folder if needed
+    TobiiDataDir = [mfilepath,filesep,'TobiiData'];
+    if ~exist(TobiiDataDir,'dir')
+        mkdir(TobiiDataDir)
+    end
+
+    % Define file name to store eyetracking data
+    StartTime=fix(clock);
+    StartTime=sprintf('%02d-%02d', StartTime(4), StartTime(5));
+    TobiiSDK.sessionID = [TobiiDataDir, filesep, handles.Parametres.ID, '_' date '_' StartTime ];
+    
+    % Store structure in handles
+    handles.TobiiSDK = TobiiSDK;
+    
+end % Tobii recording condition
+
 
 % --- Outputs from this function are returned to the command line.
 function varargout = VCV_OutputFcn(hObject, eventdata, handles) 
@@ -133,6 +180,11 @@ function varargout = VCV_OutputFcn(hObject, eventdata, handles)
 
 % Get default command line output from handles structure
 varargout{1} = handles.output;
+
+% Stop Tobii recording if on
+if handles.Parametres.TobiiRec          
+    handles.TobiiSDK.eyetracker.stop_gaze_data();       
+end
 
 delete(handles.figure1);
 
@@ -145,15 +197,7 @@ function apa_Callback(hObject, eventdata, handles)
 routine_alloff(handles);
 handles.Table(4,handles.Essai) = 1;
 if handles.Table(3,handles.Essai)==1, handles.performance=handles.performance+1;end
-if handles.Essai < handles.NbSelect,
-    handles = routine_stimulus(handles);
-    routine_allon(handles);
-    guidata(hObject, handles);
-else 
-    handles = routine_output(handles);
-    guidata(hObject, handles);
-    uiresume(handles.figure1);
-end
+ResponseButtonWasPressed(handles,hObject)
 
 
 % --- Executes on button press in ata.
@@ -164,15 +208,7 @@ function ata_Callback(hObject, eventdata, handles)
 routine_alloff(handles);
 handles.Table(4,handles.Essai) = 2;
 if handles.Table(3,handles.Essai)==2, handles.performance=handles.performance+1;end
-if handles.Essai < handles.NbSelect,
-    handles = routine_stimulus(handles);
-    routine_allon(handles);
-    guidata(hObject, handles);
-else 
-    handles = routine_output(handles);
-    guidata(hObject, handles);
-    uiresume(handles.figure1);
-end
+ResponseButtonWasPressed(handles,hObject)
 
 
 % --- Executes on button press in aka.
@@ -183,15 +219,7 @@ function aka_Callback(hObject, eventdata, handles)
 routine_alloff(handles);
 handles.Table(4,handles.Essai) = 3;
 if handles.Table(3,handles.Essai)==3, handles.performance=handles.performance+1;end
-if handles.Essai < handles.NbSelect,
-    handles = routine_stimulus(handles);
-    routine_allon(handles);
-    guidata(hObject, handles);
-else 
-    handles = routine_output(handles);
-    guidata(hObject, handles);
-    uiresume(handles.figure1);
-end
+ResponseButtonWasPressed(handles,hObject)
 
 
 % --- Executes on button press in aba.
@@ -202,15 +230,7 @@ function aba_Callback(hObject, eventdata, handles)
 routine_alloff(handles);
 handles.Table(4,handles.Essai) = 4;
 if handles.Table(3,handles.Essai)==4, handles.performance=handles.performance+1;end
-if handles.Essai < handles.NbSelect,
-    handles = routine_stimulus(handles);
-    routine_allon(handles);
-    guidata(hObject, handles);
-else 
-    handles = routine_output(handles);
-    guidata(hObject, handles);
-    uiresume(handles.figure1);
-end
+ResponseButtonWasPressed(handles,hObject)
 
 
 % --- Executes on button press in afa.
@@ -221,15 +241,7 @@ function afa_Callback(hObject, eventdata, handles)
 routine_alloff(handles);
 handles.Table(4,handles.Essai) = 7;
 if handles.Table(3,handles.Essai)==7, handles.performance=handles.performance+1;end
-if handles.Essai < handles.NbSelect,
-    handles = routine_stimulus(handles);
-    routine_allon(handles);
-    guidata(hObject, handles);
-else 
-    handles = routine_output(handles);
-    guidata(hObject, handles);
-    uiresume(handles.figure1);
-end
+ResponseButtonWasPressed(handles,hObject)
 
 
 % --- Executes on button press in assa.
@@ -240,15 +252,7 @@ function assa_Callback(hObject, eventdata, handles)
 routine_alloff(handles);
 handles.Table(4,handles.Essai) = 8;
 if handles.Table(3,handles.Essai)==8, handles.performance=handles.performance+1;end
-if handles.Essai < handles.NbSelect,
-    handles = routine_stimulus(handles);
-    routine_allon(handles);
-    guidata(hObject, handles);
-else 
-    handles = routine_output(handles);
-    guidata(hObject, handles);
-    uiresume(handles.figure1);
-end
+ResponseButtonWasPressed(handles,hObject)
 
 
 % --- Executes on button press in aga.
@@ -259,15 +263,7 @@ function aga_Callback(hObject, eventdata, handles)
 routine_alloff(handles);
 handles.Table(4,handles.Essai) = 6;
 if handles.Table(3,handles.Essai)==6, handles.performance=handles.performance+1;end
-if handles.Essai < handles.NbSelect,
-    handles = routine_stimulus(handles);
-    routine_allon(handles);
-    guidata(hObject, handles);
-else 
-    handles = routine_output(handles);
-    guidata(hObject, handles);
-    uiresume(handles.figure1);
-end
+ResponseButtonWasPressed(handles,hObject)
 
 
 % --- Executes on button press in ada.
@@ -278,15 +274,7 @@ function ada_Callback(hObject, eventdata, handles)
 routine_alloff(handles);
 handles.Table(4,handles.Essai) = 5;
 if handles.Table(3,handles.Essai)==5, handles.performance=handles.performance+1;end
-if handles.Essai < handles.NbSelect,
-    handles = routine_stimulus(handles);
-    routine_allon(handles);
-    guidata(hObject, handles);
-else 
-    handles = routine_output(handles);
-    guidata(hObject, handles);
-    uiresume(handles.figure1);
-end
+ResponseButtonWasPressed(handles,hObject)
 
 
 % --- Executes on button press in aza.
@@ -297,15 +285,7 @@ function aza_Callback(hObject, eventdata, handles)
 routine_alloff(handles);
 handles.Table(4,handles.Essai) = 11;
 if handles.Table(3,handles.Essai)==11, handles.performance=handles.performance+1;end
-if handles.Essai < handles.NbSelect,
-    handles = routine_stimulus(handles);
-    routine_allon(handles);
-    guidata(hObject, handles);
-else 
-    handles = routine_output(handles);
-    guidata(hObject, handles);
-    uiresume(handles.figure1);
-end
+ResponseButtonWasPressed(handles,hObject)
 
 
 % --- Executes on button press in aja.
@@ -316,15 +296,7 @@ function aja_Callback(hObject, eventdata, handles)
 routine_alloff(handles);
 handles.Table(4,handles.Essai) = 12;
 if handles.Table(3,handles.Essai)==12, handles.performance=handles.performance+1;end
-if handles.Essai < handles.NbSelect,
-    handles = routine_stimulus(handles);
-    routine_allon(handles);
-    guidata(hObject, handles);
-else 
-    handles = routine_output(handles);
-    guidata(hObject, handles);
-    uiresume(handles.figure1);
-end
+ResponseButtonWasPressed(handles,hObject)
 
 
 % --- Executes on button press in ava.
@@ -335,15 +307,7 @@ function ava_Callback(hObject, eventdata, handles)
 routine_alloff(handles);
 handles.Table(4,handles.Essai) = 10;
 if handles.Table(3,handles.Essai)==10, handles.performance=handles.performance+1;end
-if handles.Essai < handles.NbSelect,
-    handles = routine_stimulus(handles);
-    routine_allon(handles);
-    guidata(hObject, handles);
-else 
-    handles = routine_output(handles);
-    guidata(hObject, handles);
-    uiresume(handles.figure1);
-end
+ResponseButtonWasPressed(handles,hObject)
 
 
 % --- Executes on button press in acha.
@@ -354,15 +318,7 @@ function acha_Callback(hObject, eventdata, handles)
 routine_alloff(handles);
 handles.Table(4,handles.Essai) = 9;
 if handles.Table(3,handles.Essai)==9, handles.performance=handles.performance+1;end
-if handles.Essai < handles.NbSelect,
-    handles = routine_stimulus(handles);
-    routine_allon(handles);
-    guidata(hObject, handles);
-else 
-    handles = routine_output(handles);
-    guidata(hObject, handles);
-    uiresume(handles.figure1);
-end
+ResponseButtonWasPressed(handles,hObject)
 
 
 % --- Executes on button press in ara.
@@ -373,15 +329,7 @@ function ara_Callback(hObject, eventdata, handles)
 routine_alloff(handles);
 handles.Table(4,handles.Essai) = 15;
 if handles.Table(3,handles.Essai)==15, handles.performance=handles.performance+1;end
-if handles.Essai < handles.NbSelect,
-    handles = routine_stimulus(handles);
-    routine_allon(handles);
-    guidata(hObject, handles);
-else 
-    handles = routine_output(handles);
-    guidata(hObject, handles);
-    uiresume(handles.figure1);
-end
+ResponseButtonWasPressed(handles,hObject)
 
 
 % --- Executes on button press in ala.
@@ -392,15 +340,7 @@ function ala_Callback(hObject, eventdata, handles)
 routine_alloff(handles);
 handles.Table(4,handles.Essai) = 16;
 if handles.Table(3,handles.Essai)==16, handles.performance=handles.performance+1;end
-if handles.Essai < handles.NbSelect,
-    handles = routine_stimulus(handles);
-    routine_allon(handles);
-    guidata(hObject, handles);
-else 
-    handles = routine_output(handles);
-    guidata(hObject, handles);
-    uiresume(handles.figure1);
-end
+ResponseButtonWasPressed(handles,hObject)
 
 
 % --- Executes on button press in ana.
@@ -411,15 +351,7 @@ function ana_Callback(hObject, eventdata, handles)
 routine_alloff(handles);
 handles.Table(4,handles.Essai) = 14;
 if handles.Table(3,handles.Essai)==14, handles.performance=handles.performance+1;end
-if handles.Essai < handles.NbSelect,
-    handles = routine_stimulus(handles);
-    routine_allon(handles);
-    guidata(hObject, handles);
-else 
-    handles = routine_output(handles);
-    guidata(hObject, handles);
-    uiresume(handles.figure1);
-end
+ResponseButtonWasPressed(handles,hObject)
 
 
 % --- Executes on button press in amama.
@@ -430,18 +362,7 @@ function ama_Callback(hObject, eventdata, handles)
 routine_alloff(handles);
 handles.Table(4,handles.Essai) = 13;
 if handles.Table(3,handles.Essai)==13, handles.performance=handles.performance+1;end
-if handles.Essai < handles.NbSelect,
-    handles = routine_stimulus(handles);
-    routine_allon(handles);
-    guidata(hObject, handles);
-else 
-    handles = routine_output(handles);
-    guidata(hObject, handles);
-    uiresume(handles.figure1);
-end
-
-
-
+ResponseButtonWasPressed(handles,hObject)
 
 % --- Executes on button press in start.
 function start_Callback(hObject, eventdata, handles)
@@ -458,6 +379,12 @@ else
 end
 
 set(hObject,'Enable','off');    % Supprimer le bouton Start après pression
+
+% Start Tobii recording if required
+if handles.Parametres.TobiiRec
+    % Start to collect data
+    handles.TobiiSDK.eyetracker.get_gaze_data();
+end
 
 if handles.level==25, handles.Scale=handles.Levels.Sc25dB;
 elseif handles.level==30, handles.Scale=handles.Levels.Sc30dB;
@@ -486,8 +413,6 @@ handles.alea=randperm(handles.NbLog * handles.NbOcc);
 handles = routine_stimulus(handles);
 routine_allon(handles);
 guidata(hObject, handles);
-
-
 
 function routine_alloff(handles)
 set(handles.apa,'Enable','off');
@@ -563,7 +488,7 @@ Selection=stim2num(handles.d(Tirage + 2).name);
 handles.Table(1,handles.Essai) = handles.Essai;
 handles.Table(2,handles.Essai) = Selection;
 
-if mod(Selection,handles.NbLog) == 0,
+if mod(Selection,handles.NbLog) == 0
     handles.Table(3,handles.Essai) = handles.NbLog;
 else
     handles.Table(3,handles.Essai) = mod(Selection,handles.NbLog);
@@ -574,7 +499,7 @@ signal=audioread(handles.d(Tirage + 2).name);
 cd(handles.Parametres.ProgRep);
 
 %Plugins #1
-if strcmp(handles.Plugins{1,1},'')~=1,
+if strcmp(handles.Plugins{1,1},'')~=1
     cd plugins
     plug = str2func(char(handles.Plugins{1,1}));
     signal = plug(signal);
@@ -591,7 +516,7 @@ t=round(rand(1)*(length(handles.masker)-duration-4096));  % tirage aleatoire de 
 noise=handles.masker(t:(t+(duration-1)),round(rand(1))+1);
 
 %plugins #2
-if strcmp(handles.Plugins{1,2},'')~=1,
+if strcmp(handles.Plugins{1,2},'')~=1
     cd plugins
     plug = str2func(char(handles.Plugins{1,2}));
     noise = plug(noise);
@@ -605,7 +530,7 @@ noise = noise ./ sqrt(mean(noise.^2)); % normalisation en énergie rms
 output = signal + (noise .* handles.Factor );  % Addition Signal et Bruit avec un rapport S/N donné (controle par Factor)
 
 %Plugins #3
-if strcmp(handles.Plugins{1,3},'')~=1,
+if strcmp(handles.Plugins{1,3},'')~=1
     cd plugins
     plug = str2func(char(handles.Plugins{1,3}));
     output = plug(output);
@@ -618,22 +543,49 @@ zz=zeros(length(output),1);
 
 if handles.Parametres.Aud && handles.Parametres.Oreille == 2
     output1 = filter(handles.audiofilt,1,output);
-else output1 = output ;end
+else
+    output1 = output;
+end
 if handles.Parametres.Aud && handles.Parametres.Oreille == 3
     output2 = filter(handles.audiofilt,1,output);
-else output2 = output ;end
+else
+    output2 = output;
+end
 if handles.Parametres.Aud && handles.Parametres.Oreille == 4
     output3 = filter(handles.audiofilt1,1,output);
     output4 = filter(handles.audiofilt2,1,output);
-else output3 = output 
-     output4 = output ;end
-
-
-
-if handles.Parametres.Oreille == 2,sound([zz output1],Fs);
-elseif handles.Parametres.Oreille == 3,sound([output2 zz],Fs);
-else sound([output4 output3],Fs);
+else
+    output3 = output;
+    output4 = output;
 end
+
+% If Tobii is recording, store eyetracker timestamps just before playback
+if handles.Parametres.TobiiRec
+   handles.TobiiSDK.EventCount = handles.TobiiSDK.EventCount + 1;   
+   % See here what kind of data about the trial should be saved along, e.g.
+   % the consonant?
+%    TobiiSDK.Run(TobiiSDK.EventCount) = work.numrun;
+%    TobiiSDK.Trial(TobiiSDK.EventCount) = work.presentationCounter;
+%    TobiiSDK.AFCexpvar(TobiiSDK.EventCount) = work.expvaract;
+   handles.TobiiSDK.TrialOnsetSystemTime(TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;
+end % pupil recording option test
+
+% Playback
+if handles.Parametres.Oreille == 2
+    sound([zz output1],Fs);
+elseif handles.Parametres.Oreille == 3
+    sound([output2 zz],Fs);
+else
+    sound([output4 output3],Fs);
+end
+
+% If Tobii is recording
+if handles.Parametres.TobiiRec
+    % Also save time stamp after playback command?
+    handles.TobiiSDK.TrialPostOnsetSystemTime(TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;    
+    % Extend pause to allow recording of pupil response
+    pause(6)
+end % pupil recording option test
 pause(1.2);
 
 
@@ -642,7 +594,7 @@ pause(1.2);
 
 function handles = routine_output(handles)
 
-for k=1:handles.NbSelect,
+for k=1:handles.NbSelect
     handles.mat(handles.Table(3,k),handles.Table(4,k)) = handles.mat(handles.Table(3,k),handles.Table(4,k))+1;
 end
 
@@ -676,3 +628,28 @@ gabarit_dBG=[-100 (AudiogG(1)*0.48-11) (AudiogG(1)*0.48-10) (AudiogG(2)*0.48-8) 
 gabarit_freqG=[2.*[0 125 250 500 1000 2000 3000 4000 8000 10000] handles.Fs]./handles.Fs;
 
 filtre=fir2(4096,gabarit_freqG,10.^(gabarit_dBG/20));
+
+function ResponseButtonWasPressed(handles, hObject0)
+
+% If Tobii is recording, store and save trial data
+if handles.Parametres.TobiiRec
+    % Get gaze data from the ending trial
+    gaze_data = handles.TobiiSDK.eyetracker.get_gaze_data();
+    % Save to disk, in trial-specific file
+    save([handles.TobiiSDK.sessionID,'_gaze-data'...
+            '_trial',num2str(hanldes.TobiiSDK.EventCount),...
+            '.mat'],...
+        'gaze_data')       
+    % Save updated other Tobii info to disk
+    save([TobiiSDK.sessionID,'.mat'],'-struct','TobiiSDK') 
+end
+
+if handles.Essai < handles.NbSelect
+    handles = routine_stimulus(handles);
+    routine_allon(handles);
+    guidata(hObject0, handles);
+else 
+    handles = routine_output(handles);
+    guidata(hObject0, handles);
+    uiresume(handles.figure1);
+end
