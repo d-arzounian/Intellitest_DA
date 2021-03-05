@@ -1,10 +1,6 @@
-Add prestimulus silence for pupil recordings
-Use audioplayer instead of sound
+Correct sound distorsions! Would a better soundcard be enough?
 
-Make VCV full screen
-Hide response buttons during pupil response recording (add fixation cross/dot instead)
 Change grey level?
-Record timing of additional relevant events (fixation cross onset/offset, response press...)
 
 Add new type of masker
 

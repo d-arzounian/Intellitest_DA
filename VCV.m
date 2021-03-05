@@ -22,7 +22,7 @@ function varargout = VCV(varargin)
 
 % Edit the above text to modify the response to help VCV
 
-% Last Modified by GUIDE v2.5 08-Nov-2007 12:37:37
+% Last Modified by GUIDE v2.5 05-Mar-2021 12:46:56
 %
 % Following modifications for update and extension for joint pupillometry
 % Changed 3 instances of wavread to audioread - 20-Nov-2019, D. Arzounian
@@ -36,6 +36,15 @@ function varargout = VCV(varargin)
 % opening function; Modified location of saved data ('sessionID').
 % Replaced sound by play/audioplayer command + extended the pause for
 % playback from 1.2 to 1.5 s (max VCVCV duration is 1.41s).
+% Added pre-stimulus silence when recording pupil.
+% Making window fullscreen (required to change window size and re-center
+% button pannel (done manually) in guide to preserve some centering, and to
+% change units of uicontrol objectts to 'normalized'. Hiding button pannel
+% and mouse cursor and displaying fixation cross during trial when
+% recording pupil.
+% Changed the name of the TobiiSDK structure field collecting stimulus
+% onsets and adding more fields for other relevant timings to save.
+% - Dorothée Arzounian
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -64,6 +73,10 @@ function VCV_OpeningFcn(hObject, eventdata, handles, varargin)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to VCV (see VARARGIN)
+
+% Make VCV figure full screen
+set(hObject, 'Units', 'Normalized', 'OuterPosition', [-0.0047   -0.0083    1.0094    1.0167]); % this size in adapted for the Babinski setup
+% Center fixation cross
 
 % Choose default command line output for VCV
 handles.output = hObject;
@@ -109,7 +122,7 @@ if handles.Parametres.RSB==10000
     set(handles.TxtAccueil,'String',strvcat('Test Consonnes dans le silence         ', ' ','Cliquez sur Démarrer pour commencer    '));
 else
     set(handles.TxtAccueil,'String',strvcat('Test Consonnes dans le bruit           ', ' ','Cliquez sur Démarrer pour commencer    '));
-    %set(handles.TxtAccueil,'String',strvcat('Test Consonnes      ', 'Dans le silence     ', ' ', 'Cliquez sur Démarrer', 'pour commencer      '));
+    %set(handles.TxtAccueil,'String',strvcat('Test Consonnes      ', 'Dans le silence     ', ' ', 'Cliquez sur DÃ©marrer', 'pour commencer      '));
 end
 
 cd Bruits
@@ -387,7 +400,7 @@ else
     handles.error=1;
 end
 
-set(hObject,'Enable','off');    % Supprimer le bouton Start après pression
+set(hObject,'Enable','off');    % Supprimer le bouton Start aprÃ¨s pression
 
 % Start Tobii recording if required
 if handles.Parametres.TobiiRec
@@ -520,7 +533,7 @@ signal=filtfilt(handles.a,handles.b,signal);
 signal = signal ./ sqrt(mean(signal.^2));
 duration=length(signal);
 
-t=round(rand(1)*(length(handles.masker)-duration-4096));  % tirage aleatoire de la portion du fichier ssn à utiliser comme masque
+t=round(rand(1)*(length(handles.masker)-duration-4096));  % tirage aleatoire de la portion du fichier ssn Ã  utiliser comme masque
 
 noise=handles.masker(t:(t+(duration-1)),round(rand(1))+1);
 
@@ -535,8 +548,8 @@ end
 total_duration=length(noise);
 t=1:total_duration; % vecteur temps
 
-noise = noise ./ sqrt(mean(noise.^2)); % normalisation en énergie rms
-output = signal + (noise .* handles.Factor );  % Addition Signal et Bruit avec un rapport S/N donné (controle par Factor)
+noise = noise ./ sqrt(mean(noise.^2)); % normalisation en Ã©nergie rms
+output = signal + (noise .* handles.Factor );  % Addition Signal et Bruit avec un rapport S/N donnÃ© (controle par Factor)
 
 %Plugins #3
 if strcmp(handles.Plugins{1,3},'')~=1
@@ -576,26 +589,33 @@ elseif handles.Parametres.Oreille == 3
 else
     stimulus = audioplayer([output4 output3],Fs); % sound([output4 output3],Fs);
 end
-% If Tobii is recording, store eyetracker timestamps just before playback
+% If Tobii is recording, add silence and store eyetracker timestamps just
+% before playback, hide pannel and display fixation cross
 if handles.Parametres.TobiiRec
-   handles.TobiiSDK.EventCount = handles.TobiiSDK.EventCount + 1;   
-   % See here what kind of data about the trial should be saved along, e.g.
-   % the consonant?
-%    TobiiSDK.Run(TobiiSDK.EventCount) = work.numrun;
-%    TobiiSDK.Trial(TobiiSDK.EventCount) = work.presentationCounter;
-%    TobiiSDK.AFCexpvar(TobiiSDK.EventCount) = work.expvaract;
-   handles.TobiiSDK.TrialOnsetSystemTime(handles.TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;
+    % Increment event  count
+   handles.TobiiSDK.EventCount = handles.TobiiSDK.EventCount + 1;
+   % Hide button pannel and display fixation cross
+    HideButtonPannel(handles)       
+           % See here what kind of data about the trial should be saved along, e.g.
+           % the consonant?
+        %    TobiiSDK.Run(TobiiSDK.EventCount) = work.numrun;
+        %    TobiiSDK.Trial(TobiiSDK.EventCount) = work.presentationCounter;
+        %    TobiiSDK.AFCexpvar(TobiiSDK.EventCount) = work.expvaract;
+    % Silence and playback
+   pause(2)
+   handles.TobiiSDK.StimulusOnsetSystemTime(handles.TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;
 end % pupil recording option test
 play(stimulus)
 
 % If Tobii is recording
 if handles.Parametres.TobiiRec
     % Also save time stamp after playback command?
-    handles.TobiiSDK.TrialPostOnsetSystemTime(handles.TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;    
+    handles.TobiiSDK.StimulusPostOnsetSystemTime(handles.TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;    
     % Extend pause to allow recording of pupil response
     pause(6)
 end % pupil recording option test
 pause(1.5);
+ShowButtonPannel(handles)
 
 
 
@@ -611,7 +631,7 @@ handles.perf=[handles.perf (handles.performance/handles.NbSelect)*100];
 
 %mat=handles.mat;
 %perf=handles.perf;
-%traitement des données
+%traitement des donnÃ©es
 [handles.voisement, handles.lieu, handles.mode]=trans_info(handles.mat);
 
 handles.output=struct('results',[handles.perf handles.voisement handles.lieu handles.mode],'mat',handles.mat);
@@ -642,6 +662,8 @@ function ResponseButtonWasPressed(handles, hObject0)
 
 % If Tobii is recording, store and save trial data
 if handles.Parametres.TobiiRec
+    % Save timestamp of button press
+    handles.TobiiSDK.ButtonPressOnsetSystemTime(handles.TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;    
     % Get gaze data from the ending trial
     gaze_data = handles.TobiiSDK.eyetracker.get_gaze_data();
     % Save to disk, in trial-specific file
@@ -656,10 +678,62 @@ end
 
 if handles.Essai < handles.NbSelect
     handles = routine_stimulus(handles);
+    ShowButtonPannel(handles)
     routine_allon(handles);
     guidata(hObject0, handles);
 else 
     handles = routine_output(handles);
     guidata(hObject0, handles);
     uiresume(handles.figure1);
+end
+
+function HideButtonPannel(handles)
+set(handles.apa,'Visible','off');
+set(handles.ata,'Visible','off');
+set(handles.aka,'Visible','off');
+set(handles.aba,'Visible','off');
+set(handles.afa,'Visible','off');
+set(handles.assa,'Visible','off');
+set(handles.aga,'Visible','off');
+set(handles.ada,'Visible','off');
+set(handles.aza,'Visible','off');
+set(handles.aja,'Visible','off');
+set(handles.ava,'Visible','off');
+set(handles.acha,'Visible','off');
+set(handles.ara,'Visible','off');
+set(handles.ala,'Visible','off');
+set(handles.ana,'Visible','off');
+set(handles.ama,'Visible','off');
+% Hide mouse cursor
+set(handles.figure1, 'Pointer', 'custom', 'PointerShapeCData', NaN(16,16))
+% Display fixation cross
+set(handles.FixationCross,'Visible','on');
+if handles.Parametres.TobiiRec
+    % Save timestamp of fixation cross onset
+    handles.TobiiSDK.FixationOnsetSystemTime(handles.TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;    
+end
+
+function ShowButtonPannel(handles)
+set(handles.FixationCross,'Visible','off');
+set(handles.apa,'Visible','on');
+set(handles.ata,'Visible','on');
+set(handles.aka,'Visible','on');
+set(handles.aba,'Visible','on');
+set(handles.afa,'Visible','on');
+set(handles.assa,'Visible','on');
+set(handles.aga,'Visible','on');
+set(handles.ada,'Visible','on');
+set(handles.aza,'Visible','on');
+set(handles.aja,'Visible','on');
+set(handles.ava,'Visible','on');
+set(handles.acha,'Visible','on');
+set(handles.ara,'Visible','on');
+set(handles.ala,'Visible','on');
+set(handles.ana,'Visible','on');
+set(handles.ama,'Visible','on');
+% Display mouse cursor back
+set(handles.figure1, 'Pointer', 'arrow', 'PointerShapeCData', ones(16,16))
+if handles.Parametres.TobiiRec
+    % Save timestamp of button pannel display
+    handles.TobiiSDK.ButtonPannelDisplaySystemTime(handles.TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;    
 end
