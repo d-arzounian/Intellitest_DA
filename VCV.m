@@ -34,6 +34,8 @@ function varargout = VCV(varargin)
 % 05_Mar-2021 - Modifications after testing the program in Babinski booth,
 % with Tobii plugged in. Moved lines for updating handles at the end of the
 % opening function; Modified location of saved data ('sessionID').
+% Replaced sound by play/audioplayer command + extended the pause for
+% playback from 1.2 to 1.5 s (max VCVCV duration is 1.41s).
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -566,6 +568,14 @@ else
     output4 = output;
 end
 
+% Playback
+if handles.Parametres.Oreille == 2
+    stimulus = audioplayer([zz output1],Fs);% sound([zz output1],Fs);
+elseif handles.Parametres.Oreille == 3
+    stimulus = audioplayer([output2 zz],Fs); %sound([output2 zz],Fs);
+else
+    stimulus = audioplayer([output4 output3],Fs); % sound([output4 output3],Fs);
+end
 % If Tobii is recording, store eyetracker timestamps just before playback
 if handles.Parametres.TobiiRec
    handles.TobiiSDK.EventCount = handles.TobiiSDK.EventCount + 1;   
@@ -576,15 +586,7 @@ if handles.Parametres.TobiiRec
 %    TobiiSDK.AFCexpvar(TobiiSDK.EventCount) = work.expvaract;
    handles.TobiiSDK.TrialOnsetSystemTime(handles.TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;
 end % pupil recording option test
-
-% Playback
-if handles.Parametres.Oreille == 2
-    sound([zz output1],Fs);
-elseif handles.Parametres.Oreille == 3
-    sound([output2 zz],Fs);
-else
-    sound([output4 output3],Fs);
-end
+play(stimulus)
 
 % If Tobii is recording
 if handles.Parametres.TobiiRec
@@ -593,7 +595,7 @@ if handles.Parametres.TobiiRec
     % Extend pause to allow recording of pupil response
     pause(6)
 end % pupil recording option test
-pause(1.2);
+pause(1.5);
 
 
 

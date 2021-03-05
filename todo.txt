@@ -1,0 +1,12 @@
+Add prestimulus silence for pupil recordings
+Use audioplayer instead of sound
+
+Make VCV full screen
+Hide response buttons during pupil response recording (add fixation cross/dot instead)
+Change grey level?
+Record timing of additional relevant events (fixation cross onset/offset, response press...)
+
+Add new type of masker
+
+Better way of naming pupil result files?
+Better way of saving data? Save more behavioral data (i.e. trial order, etc.)?
