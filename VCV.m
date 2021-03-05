@@ -45,6 +45,10 @@ function varargout = VCV(varargin)
 % Changed the name of the TobiiSDK structure field collecting stimulus
 % onsets and adding more fields for other relevant timings to save.
 % - Dorothée Arzounian
+%
+% 5-Mar-2021, later, on a different machine: slightly modified the syntax
+% of the pupil data file names to have suffix like _trial01 instead of
+% _trial1 (did not test outcome) - DA
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -668,7 +672,7 @@ if handles.Parametres.TobiiRec
     gaze_data = handles.TobiiSDK.eyetracker.get_gaze_data();
     % Save to disk, in trial-specific file
     save([handles.TobiiSDK.sessionID,'_gaze-data'...
-            '_trial',num2str(handles.TobiiSDK.EventCount),...
+            '_trial',num2str(handles.TobiiSDK.EventCount,'%.2d'),...
             '.mat'],...
         'gaze_data')       
     % Save updated other Tobii info to disk
