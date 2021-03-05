@@ -30,6 +30,8 @@ function varargout = intellitest(varargin)
 % containing patient code and noise type, to be passed to VCV.m
 %- Dorothée Arzounian
 %
+% 05-Mar-2021 - Corrected the definition of 'ID' parameter field
+%
 % Last Modified by GUIDE v2.5 04-Mar-2021 13:17:49
 
 % Begin initialization code - DO NOT EDIT
@@ -1042,7 +1044,11 @@ if exist('Data.log','file')~=0
 else
     Rep = {'Stimuli\Default\VCV'};
 end
-ID = [handles.Code.Value,'_',ssn];
+if handles.Silence.Value
+    ID = [handles.Code.String,'_Silence'];
+else
+    ID = [handles.Code.String,'_',handles.BType];
+end
 handles.Parametres = struct(...
     'StimRep',Rep,...
     'ProgRep','..\..\..',...

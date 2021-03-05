@@ -30,6 +30,10 @@ function varargout = VCV(varargin)
 % 04-Mar-2021 - Added code for optional joint recording with Tobii -
 % Lightened response button callback function by moving redundant code to
 % ResponseButtonWasPressed helper function.
+%
+% 05_Mar-2021 - Modifications after testing the program in Babinski booth,
+% with Tobii plugged in. Moved lines for updating handles at the end of the
+% opening function; Modified location of saved data ('sessionID').
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -121,13 +125,6 @@ end
 set(handles.TxtAccueil,'HorizontalAlignment','center');
 set(handles.TxtAccueil,'Visible','on');
 
-% Update handles structure
-guidata(hObject, handles);
-uiwait(handles.figure1);
-
-% UIWAIT makes VCV wait for user response (see UIRESUME)
-% uiwait(handles.figure1);
-
 % Initialize Tobii
 if handles.Parametres.TobiiRec
     % Initialization of the communication with TobiiPro
@@ -163,12 +160,22 @@ if handles.Parametres.TobiiRec
     % Define file name to store eyetracking data
     StartTime=fix(clock);
     StartTime=sprintf('%02d-%02d', StartTime(4), StartTime(5));
-    TobiiSDK.sessionID = [TobiiDataDir, filesep, handles.Parametres.ID, '_' date '_' StartTime ];
+    datedID = [handles.Parametres.ID, '_' date '_' StartTime ];
+    sessionDir = [TobiiDataDir, filesep, datedID ];
+    mkdir(sessionDir)
+    TobiiSDK.sessionID = [sessionDir, filesep, datedID ];
     
     % Store structure in handles
     handles.TobiiSDK = TobiiSDK;
     
 end % Tobii recording condition
+
+% Update handles structure
+guidata(hObject, handles);
+uiwait(handles.figure1);
+
+% UIWAIT makes VCV wait for user response (see UIRESUME)
+% uiwait(handles.figure1);
 
 
 % --- Outputs from this function are returned to the command line.
@@ -567,7 +574,7 @@ if handles.Parametres.TobiiRec
 %    TobiiSDK.Run(TobiiSDK.EventCount) = work.numrun;
 %    TobiiSDK.Trial(TobiiSDK.EventCount) = work.presentationCounter;
 %    TobiiSDK.AFCexpvar(TobiiSDK.EventCount) = work.expvaract;
-   handles.TobiiSDK.TrialOnsetSystemTime(TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;
+   handles.TobiiSDK.TrialOnsetSystemTime(handles.TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;
 end % pupil recording option test
 
 % Playback
@@ -582,7 +589,7 @@ end
 % If Tobii is recording
 if handles.Parametres.TobiiRec
     % Also save time stamp after playback command?
-    handles.TobiiSDK.TrialPostOnsetSystemTime(TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;    
+    handles.TobiiSDK.TrialPostOnsetSystemTime(handles.TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;    
     % Extend pause to allow recording of pupil response
     pause(6)
 end % pupil recording option test
@@ -637,11 +644,12 @@ if handles.Parametres.TobiiRec
     gaze_data = handles.TobiiSDK.eyetracker.get_gaze_data();
     % Save to disk, in trial-specific file
     save([handles.TobiiSDK.sessionID,'_gaze-data'...
-            '_trial',num2str(hanldes.TobiiSDK.EventCount),...
+            '_trial',num2str(handles.TobiiSDK.EventCount),...
             '.mat'],...
         'gaze_data')       
     % Save updated other Tobii info to disk
-    save([TobiiSDK.sessionID,'.mat'],'-struct','TobiiSDK') 
+    TobiiSDK = handles.TobiiSDK;
+    save([handles.TobiiSDK.sessionID,'.mat'],'-struct','TobiiSDK') 
 end
 
 if handles.Essai < handles.NbSelect

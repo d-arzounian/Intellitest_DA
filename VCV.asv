@@ -30,6 +30,10 @@ function varargout = VCV(varargin)
 % 04-Mar-2021 - Added code for optional joint recording with Tobii -
 % Lightened response button callback function by moving redundant code to
 % ResponseButtonWasPressed helper function.
+%
+% 05_Mar-2021 - Modifications after testing the program in Babinski booth,
+% with Tobii plugged in. Moved lines for updating handles at the end of the
+% opening function; Modified location of saved data ('s
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -80,7 +84,7 @@ handles.Essai = 0;
 handles.Table = zeros(4,handles.NbSelect);
 handles.ontour = 0;
 handles.bip = audioread('ding.wav');
-[handles.a handles.b]=butter(6,8000/(0.5*handles.Fs)); % lowpass filtering at 36 dB/oct, fc=5kHz
+[handles.a, handles.b]=butter(6,8000/(0.5*handles.Fs)); % lowpass filtering at 36 dB/oct, fc=5kHz
 if handles.Parametres.Aud && handles.Parametres.Oreille == 2
     handles.audiofilt=routine_CAMFITD(handles);
 elseif handles.Parametres.Aud && handles.Parametres.Oreille == 3
@@ -99,7 +103,7 @@ handles.d = dir;
 cd(handles.Parametres.ProgRep);
 
 % MAJ panneau accueil
-if handles.Parametres.RSB==10000,
+if handles.Parametres.RSB==10000
     set(handles.TxtAccueil,'String',strvcat('Test Consonnes dans le silence         ', ' ','Cliquez sur Démarrer pour commencer    '));
 else
     set(handles.TxtAccueil,'String',strvcat('Test Consonnes dans le bruit           ', ' ','Cliquez sur Démarrer pour commencer    '));
@@ -110,7 +114,7 @@ cd Bruits
 handles.masker=audioread(handles.Parametres.SSN);
 cd ..
 
-if exist('Data1000.log','file')~=0,
+if exist('Data1000.log','file')~=0
     load -mat Data1000.log
     if isfield(Data,'Plugins'), handles.Plugins = Data.Plugins;
     else handles.Plugins = {'','',''}; end
@@ -120,13 +124,6 @@ end
 
 set(handles.TxtAccueil,'HorizontalAlignment','center');
 set(handles.TxtAccueil,'Visible','on');
-
-% Update handles structure
-guidata(hObject, handles);
-uiwait(handles.figure1);
-
-% UIWAIT makes VCV wait for user response (see UIRESUME)
-% uiwait(handles.figure1);
 
 % Initialize Tobii
 if handles.Parametres.TobiiRec
@@ -163,12 +160,22 @@ if handles.Parametres.TobiiRec
     % Define file name to store eyetracking data
     StartTime=fix(clock);
     StartTime=sprintf('%02d-%02d', StartTime(4), StartTime(5));
-    TobiiSDK.sessionID = [TobiiDataDir, filesep, handles.Parametres.ID, '_' date '_' StartTime ];
+    datedID = [handles.Parametres.ID, '_' date '_' StartTime ];
+    sessionDir = [TobiiDataDir, filesep, datedID ];
+    mkdir(sessionDir)
+    TobiiSDK.sessionID = [sessionDir, filesep, datedID ];
     
     % Store structure in handles
     handles.TobiiSDK = TobiiSDK;
     
 end % Tobii recording condition
+
+% Update handles structure
+guidata(hObject, handles);
+uiwait(handles.figure1);
+
+% UIWAIT makes VCV wait for user response (see UIRESUME)
+% uiwait(handles.figure1);
 
 
 % --- Outputs from this function are returned to the command line.
@@ -488,7 +495,7 @@ Selection=stim2num(handles.d(Tirage + 2).name);
 handles.Table(1,handles.Essai) = handles.Essai;
 handles.Table(2,handles.Essai) = Selection;
 
-if mod(Selection,handles.NbLog) == 0,
+if mod(Selection,handles.NbLog) == 0
     handles.Table(3,handles.Essai) = handles.NbLog;
 else
     handles.Table(3,handles.Essai) = mod(Selection,handles.NbLog);
@@ -499,7 +506,7 @@ signal=audioread(handles.d(Tirage + 2).name);
 cd(handles.Parametres.ProgRep);
 
 %Plugins #1
-if strcmp(handles.Plugins{1,1},'')~=1,
+if strcmp(handles.Plugins{1,1},'')~=1
     cd plugins
     plug = str2func(char(handles.Plugins{1,1}));
     signal = plug(signal);
@@ -516,7 +523,7 @@ t=round(rand(1)*(length(handles.masker)-duration-4096));  % tirage aleatoire de 
 noise=handles.masker(t:(t+(duration-1)),round(rand(1))+1);
 
 %plugins #2
-if strcmp(handles.Plugins{1,2},'')~=1,
+if strcmp(handles.Plugins{1,2},'')~=1
     cd plugins
     plug = str2func(char(handles.Plugins{1,2}));
     noise = plug(noise);
@@ -530,7 +537,7 @@ noise = noise ./ sqrt(mean(noise.^2)); % normalisation en énergie rms
 output = signal + (noise .* handles.Factor );  % Addition Signal et Bruit avec un rapport S/N donné (controle par Factor)
 
 %Plugins #3
-if strcmp(handles.Plugins{1,3},'')~=1,
+if strcmp(handles.Plugins{1,3},'')~=1
     cd plugins
     plug = str2func(char(handles.Plugins{1,3}));
     output = plug(output);
@@ -543,15 +550,21 @@ zz=zeros(length(output),1);
 
 if handles.Parametres.Aud && handles.Parametres.Oreille == 2
     output1 = filter(handles.audiofilt,1,output);
-else output1 = output ;end
+else
+    output1 = output;
+end
 if handles.Parametres.Aud && handles.Parametres.Oreille == 3
     output2 = filter(handles.audiofilt,1,output);
-else output2 = output ;end
+else
+    output2 = output;
+end
 if handles.Parametres.Aud && handles.Parametres.Oreille == 4
     output3 = filter(handles.audiofilt1,1,output);
     output4 = filter(handles.audiofilt2,1,output);
-else output3 = output 
-     output4 = output ;end
+else
+    output3 = output;
+    output4 = output;
+end
 
 % If Tobii is recording, store eyetracker timestamps just before playback
 if handles.Parametres.TobiiRec
@@ -561,19 +574,22 @@ if handles.Parametres.TobiiRec
 %    TobiiSDK.Run(TobiiSDK.EventCount) = work.numrun;
 %    TobiiSDK.Trial(TobiiSDK.EventCount) = work.presentationCounter;
 %    TobiiSDK.AFCexpvar(TobiiSDK.EventCount) = work.expvaract;
-   handles.TobiiSDK.TrialOnsetSystemTime(TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;
+   handles.TobiiSDK.TrialOnsetSystemTime(handles.TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;
 end % pupil recording option test
 
 % Playback
-if handles.Parametres.Oreille == 2,sound([zz output1],Fs);
-elseif handles.Parametres.Oreille == 3,sound([output2 zz],Fs);
-else sound([output4 output3],Fs);
+if handles.Parametres.Oreille == 2
+    sound([zz output1],Fs);
+elseif handles.Parametres.Oreille == 3
+    sound([output2 zz],Fs);
+else
+    sound([output4 output3],Fs);
 end
 
 % If Tobii is recording
 if handles.Parametres.TobiiRec
     % Also save time stamp after playback command?
-    handles.TobiiSDK.TrialPostOnsetSystemTime(TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;    
+    handles.TobiiSDK.TrialPostOnsetSystemTime(handles.TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;    
     % Extend pause to allow recording of pupil response
     pause(6)
 end % pupil recording option test
@@ -585,7 +601,7 @@ pause(1.2);
 
 function handles = routine_output(handles)
 
-for k=1:handles.NbSelect,
+for k=1:handles.NbSelect
     handles.mat(handles.Table(3,k),handles.Table(4,k)) = handles.mat(handles.Table(3,k),handles.Table(4,k))+1;
 end
 
@@ -620,7 +636,7 @@ gabarit_freqG=[2.*[0 125 250 500 1000 2000 3000 4000 8000 10000] handles.Fs]./ha
 
 filtre=fir2(4096,gabarit_freqG,10.^(gabarit_dBG/20));
 
-function ResponseButtonWasPressed(handles, hObject)
+function ResponseButtonWasPressed(handles, hObject0)
 
 % If Tobii is recording, store and save trial data
 if handles.Parametres.TobiiRec
@@ -628,19 +644,20 @@ if handles.Parametres.TobiiRec
     gaze_data = handles.TobiiSDK.eyetracker.get_gaze_data();
     % Save to disk, in trial-specific file
     save([handles.TobiiSDK.sessionID,'_gaze-data'...
-            '_trial',num2str(hanldes.TobiiSDK.EventCount),...
+            '_trial',num2str(handles.TobiiSDK.EventCount),...
             '.mat'],...
         'gaze_data')       
     % Save updated other Tobii info to disk
-    save([TobiiSDK.sessionID,'.mat'],'-struct','TobiiSDK') 
+    TobiiSDK = handles.TobiiSDK;
+    save([handles.TobiiSDK.sessionID,'.mat'],'-struct','TobiiSDK') 
 end
 
 if handles.Essai < handles.NbSelect
     handles = routine_stimulus(handles);
     routine_allon(handles);
-    guidata(hObject, handles);
+    guidata(hObject0, handles);
 else 
     handles = routine_output(handles);
-    guidata(hObject, handles);
+    guidata(hObject0, handles);
     uiresume(handles.figure1);
 end
