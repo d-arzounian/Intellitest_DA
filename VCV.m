@@ -46,9 +46,14 @@ function varargout = VCV(varargin)
 % onsets and adding more fields for other relevant timings to save.
 % - Dorothée Arzounian
 %
-% 5-Mar-2021, later, on a different machine: slightly modified the syntax
-% of the pupil data file names to have suffix like _trial01 instead of
-% _trial1 (did not test outcome) - DA
+% 5-Mar-2021, later, on a different machine: 
+% S lightly modified the syntax of the pupil data file names to have suffix
+% like _trial01 instead of _trial1 
+% Now return handles as output argument of HideButtonPannel and
+% ShowButtonPannel functions, otherwise the timing data of fixation
+% display is not passed on.
+% (did not test outcomes)
+% - DA
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -599,7 +604,7 @@ if handles.Parametres.TobiiRec
     % Increment event  count
    handles.TobiiSDK.EventCount = handles.TobiiSDK.EventCount + 1;
    % Hide button pannel and display fixation cross
-    HideButtonPannel(handles)       
+    handles = HideButtonPannel(handles)       
            % See here what kind of data about the trial should be saved along, e.g.
            % the consonant?
         %    TobiiSDK.Run(TobiiSDK.EventCount) = work.numrun;
@@ -619,7 +624,7 @@ if handles.Parametres.TobiiRec
     pause(6)
 end % pupil recording option test
 pause(1.5);
-ShowButtonPannel(handles)
+handles = ShowButtonPannel(handles)
 
 
 
@@ -691,7 +696,7 @@ else
     uiresume(handles.figure1);
 end
 
-function HideButtonPannel(handles)
+function handles = HideButtonPannel(handles)
 set(handles.apa,'Visible','off');
 set(handles.ata,'Visible','off');
 set(handles.aka,'Visible','off');
@@ -717,7 +722,7 @@ if handles.Parametres.TobiiRec
     handles.TobiiSDK.FixationOnsetSystemTime(handles.TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;    
 end
 
-function ShowButtonPannel(handles)
+function handles = ShowButtonPannel(handles)
 set(handles.FixationCross,'Visible','off');
 set(handles.apa,'Visible','on');
 set(handles.ata,'Visible','on');
