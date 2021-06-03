@@ -578,6 +578,9 @@ switch handles.Parametres.SSN
     otherwise
         t=round(rand(1)*(length(handles.masker)-duration-4096));  % tirage aleatoire de la portion du fichier ssn à utiliser comme masque
         noise=handles.masker(t:(t+(duration-1)),round(rand(1))+1);
+        
+        % Note: I don't know whether the following should also be applied
+        % to the 'VCVCV' masker case - DA, 3-Jun-2021
         %plugins #2
         if strcmp(handles.Plugins{1,2},'')~=1
             cd plugins
