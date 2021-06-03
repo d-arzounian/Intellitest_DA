@@ -1239,7 +1239,7 @@ elseif get(handles.Stat,'Value'), bb='BStationnaire';
 elseif get(handles.Tempo,'Value'), bb='BFluctTempo';
 elseif get(handles.Spectro,'Value'), bb='BFluctSpectro';
 elseif get(handles.SpectroTempo,'Value'), bb='BFluctSpectroTempo';
-elseif get(handles.VCVCV,'Value'), bb='VCVCV';
+elseif get(handles.VCVCV,'Value'), bb='BFluctSpectroTempo';
 end
 
 if get(handles.AudOn,'Value')
