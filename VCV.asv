@@ -145,7 +145,8 @@ switch handles.Parametres.SSN
         maskerFiles = dir; 
         maskerFiles(1:2) = []; % remove '.' and '..'
         for iFile = numel(maskerFiles) : -1: 1
-            handles.masker{iFile} = audioread(maskerFiles(iFile).name);
+            handles.masker{iFile}.signal = audioread(maskerFiles(iFile).name);
+            handles.masker{iFiles}.name = maskerFiles(iFile).name; 
         end
         cd ..
     otherwise
@@ -541,6 +542,7 @@ else
 end
 
 signal=audioread(handles.d(Tirage + 2).name);
+signalname = handles.d(Tirage + 2).name; % store to compare with masker
 
 cd(handles.Parametres.ProgRep);
 
@@ -561,8 +563,13 @@ switch handles.Parametres.SSN
     case 'VCVCV'
         iMasker = randi(numel(handles.masker),1); % draw random masker
         % TO DO: change masker if it is the same C as the signal
+        while strncmpi(handles.masker{iMasker}.name, signalname,5)
+            % Masker and target have the same consonant, pick a different
+            % masker
+            
+        maskername = handles.masker{iMasker}.name;
         % TO DO: store masker identity for each trial
-        noise = handles.masker{iMasker};
+        noise = handles.masker{iMasker}.signal;    
         handles.masker(iMasker) = []; % Suppress masker from list for next trials
         noise = noise ./ sqrt(mean(noise.^2)); % normalisation en énergie rms
         % Align noise and signal on their centers
