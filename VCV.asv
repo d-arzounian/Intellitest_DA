@@ -563,7 +563,7 @@ switch handles.Parametres.SSN
         % TO DO: change masker if it is the same C as the signal
         % TO DO: store masker identity for each trial
         noise = handles.masker{iMasker};
-        handles.masker{iMasker} = []; % Suppress masker from list for next trials
+        handles.masker(iMasker) = []; % Suppress masker from list for next trials
         noise = noise ./ sqrt(mean(noise.^2)); % normalisation en énergie rms
         % Align noise and signal on their centers
         if length(signal) > length(noise)
@@ -578,6 +578,9 @@ switch handles.Parametres.SSN
     otherwise
         t=round(rand(1)*(length(handles.masker)-duration-4096));  % tirage aleatoire de la portion du fichier ssn à utiliser comme masque
         noise=handles.masker(t:(t+(duration-1)),round(rand(1))+1);
+        
+        % Note: I don't know whether the following should also be applied
+        % to the 'VCVCV' masker case - DA, 3-Jun-2021
         %plugins #2
         if strcmp(handles.Plugins{1,2},'')~=1
             cd plugins
@@ -639,7 +642,7 @@ if handles.Parametres.TobiiRec
     % Increment event  count
    handles.TobiiSDK.EventCount = handles.TobiiSDK.EventCount + 1;
    % Hide button pannel and display fixation cross
-    handles = HideButtonPannel(handles)       
+    handles = HideButtonPannel(handles);       
            % See here what kind of data about the trial should be saved along, e.g.
            % the consonant?
         %    TobiiSDK.Run(TobiiSDK.EventCount) = work.numrun;
@@ -659,7 +662,8 @@ if handles.Parametres.TobiiRec
     pause(6)
 end % pupil recording option test
 pause(1.5);
-handles = ShowButtonPannel(handles)
+
+handles = ShowButtonPannel(handles);
 
 
 
