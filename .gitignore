@@ -1,2 +1,10 @@
-*.log
-*.bak
+Data250.log
+Data250.bak
+Data500.log
+Data500.bak
+Data1000.log
+Data1000.bak
+Data2000.log
+Data2000.bak
+Data4000.log
+Data40000.bak
