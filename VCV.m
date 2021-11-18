@@ -58,6 +58,12 @@ function varargout = VCV(varargin)
 % 3-Jun-2021 - Added conditional statements to handle the case of VCVCV
 % maskers (where Parametres.SSN = 'VCVCV') in VCV_OpeningFcn and in
 % routine_stimulus functions
+%
+%  1-Oct-2021 - Corrected one bug leading to occasional silent maskers
+%  (previously used maskers were in fact replaced by a silence instead of
+%  being removed from the list). Also added a verification (while loop) to
+%  redraw random masker if necessary until it is from a different category
+%  as the target.
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
