@@ -33,8 +33,14 @@ function varargout = intellitest(varargin)
 % 05-Mar-2021 - Corrected the definition of 'ID' parameter field - DA
 %
 % 03-Jun-2021 - Added conditional statements to handle the case where VCVCV
-% maskers are selected in BtuitSelect_SelectionChangeFcn and in routine_VCV
+% maskers are selected in BruitSelect_SelectionChangeFcn and in routine_VCV
 % functions - DA
+%
+% 18-Oct-2021 - Now saving trial-specific data to disk in the case of
+% consonant material: storing the new field 'sequence' of the output
+% structure of VCV.m as an additional field of handles with the same name,
+% in routine_VCV; then appending this as a new field 'Sequence' of the
+% 'results_mat' structure variable in routine_outsave.
 %
 % Last Modified by GUIDE v2.5 04-Mar-2021 13:17:49
 
@@ -1077,6 +1083,7 @@ out=VCV(handles.Parametres);
 set(handles.TextPerf,'String',['Score:  ',num2str(RAUCorr(out.results(1)),'%6.2f'),'%']);
 set(handles.TextVLM,'String',strvcat(['Voisement:  ',num2str(out.results(2),'%6.2f'),'%'], ['Lieu:            ',num2str(out.results(3),'%6.2f'),'%'], ['Mode:          ',num2str(out.results(4),'%6.2f'),'%']));
 handles.VCVp=out.results(1);handles.VCVv=out.results(2);handles.VCVl=out.results(3);handles.VCVm=out.results(4);handles.VCVmat=out.mat;
+handles.sequence = out.sequence; % storing trial-specific data as additional information - 18-Oct-2021 - DA
 
 function handles=routine_CVC(handles)
 ssn=strcat(handles.BType,'_V.wav');
@@ -1257,7 +1264,8 @@ if get(handles.Stim,'Value')==2
                      'DateDeNaissance',[get(handles.Jour,'String'),'/',get(handles.Mois,'String'),'/',get(handles.Annee,'String')],...
                      'Sexe',sx,'TypeSurdite',ss,'Oreille',or,'ControleAudibilite',aa,...
                      'AudiogrammeD',AudioDdBtmp,'AudiogrammeG',AudioGdBtmp,'Stimuli','VCVCV','Bruit',bb,...
-                     'Performance',RAUCorr(handles.VCVp),'Voisement',handles.VCVv,'Lieu',handles.VCVl,'Mode',handles.VCVm,'Matrice',handles.VCVmat);
+                     'Performance',RAUCorr(handles.VCVp),'Voisement',handles.VCVv,'Lieu',handles.VCVl,'Mode',handles.VCVm,'Matrice',handles.VCVmat,...
+                     'Sequence',handles.sequence); % new entry, to save trial-specific data to disk - 18-Oct.2021 - DA
 
 %     resultats_xls={'Code','Date','DateDeNaissance','Sexe','TypeSurdite','Oreille','ControleAudibilite',...
 %                    'AudiogD250','AudiogD500','AudiogD1000','AudiogD2000','AudiogD4000','AudiogD8000',...

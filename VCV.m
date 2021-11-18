@@ -64,6 +64,17 @@ function varargout = VCV(varargin)
 %  being removed from the list). Also added a verification (while loop) to
 %  redraw random masker if necessary until it is from a different category
 %  as the target.
+%
+% 18-Oct-2021 - (1) Modified the way target and masker are compared after
+% randomly drawing masker, now using helper function stim2num, for
+% consistency; (2) Now storing more data to handles during
+% routine_stimulus: sequence of target file names (handles.TargetSeq),
+% sequence of masker file names (handles.MaskerSeq), sequence of masker
+% categories (as the 5th line of handles.Table, with the same code number
+% as for target category). These data are also injected in the function's
+% output as fields of a substructure 'sequence' of handles.output, by
+% routine_output. TO DO: use these new fields in intellitest.m to save the
+% data to disk !! Initialize TargetSeq and MaskerSeq?
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -94,7 +105,7 @@ function VCV_OpeningFcn(hObject, eventdata, handles, varargin)
 % varargin   command line arguments to VCV (see VARARGIN)
 
 % Make VCV figure full screen
-set(hObject, 'Units', 'Normalized', 'OuterPosition', [-0.0047   -0.0083    1.0094    1.0167]); % this size in adapted for the Babinski setup
+set(hObject, 'Units', 'Normalized', 'OuterPosition', [-0.0047   -0.0083    1.0094    1.0167]); % this size is adapted for the Babinski setup
 % Center fixation cross
 
 % Choose default command line output for VCV
@@ -115,7 +126,9 @@ handles.NbSelect = 48;
 % end
 handles.Factor = 10^(-(handles.Parametres.RSB/20));
 handles.Essai = 0;
-handles.Table = zeros(4,handles.NbSelect);
+handles.Table = zeros(5,handles.NbSelect);
+handles.TargetSeq = cell(1,handles.NbSelect); % 18-Oct-2021 - DA
+handles.MaskerSeq = cell(1,handles.NbSelect); % 18-Oct-2021 - DA
 handles.ontour = 0;
 handles.bip = audioread('ding.wav');
 [handles.a, handles.b]=butter(6,8000/(0.5*handles.Fs)); % lowpass filtering at 36 dB/oct, fc=5kHz
@@ -541,6 +554,8 @@ Selection=stim2num(handles.d(Tirage + 2).name);
 handles.Table(1,handles.Essai) = handles.Essai;
 handles.Table(2,handles.Essai) = Selection;
 
+% I guess the following is just there to store the same thing under an
+% integer format - DA
 if mod(Selection,handles.NbLog) == 0
     handles.Table(3,handles.Essai) = handles.NbLog;
 else
@@ -549,6 +564,7 @@ end
 
 signal=audioread(handles.d(Tirage + 2).name);
 signalname = handles.d(Tirage + 2).name; % store to compare with masker
+handles.TargetSeq{handles.Essai} = signalname; % store in handles for processing in other functions
 
 cd(handles.Parametres.ProgRep);
 
@@ -567,14 +583,19 @@ duration=length(signal);
 
 switch handles.Parametres.SSN
     case 'VCVCV'
-        iMasker = randi(numel(handles.masker),1); % draw random masker
-        while strncmpi(handles.masker{iMasker}.name, signalname,5) % Compare masker and signal categories
+        iMasker = randi(numel(handles.masker),1); % draw random VCVCV masker from lis
+        % Compare masker and signal categories, change masker if necessary
+        while stim2num(handles.masker{iMasker}.name)==stim2num(signalname)
+%         while strncmpi(handles.masker{iMasker}.name, signalname,5) 
             % Masker and target have the same consonant, pick a different
             % masker
             iMasker = randi(numel(handles.masker),1);
         end
         maskername = handles.masker{iMasker}.name;
-        % TO DO: save masker identity (to disk) for each trial
+        % Store masker information
+        handles.Table(5,handles.Essai) = stim2num(maskername); % masker consonant category
+        handles.MaskerSeq{handles.Essai} = maskername;
+        % Store masker waveform for further use as 'noise'
         noise = handles.masker{iMasker}.signal;    
         handles.masker(iMasker) = []; % Suppress masker from list for next trials
         noise = noise ./ sqrt(mean(noise.^2)); % normalisation en énergie rms
@@ -695,7 +716,14 @@ handles.perf=[handles.perf (handles.performance/handles.NbSelect)*100];
 %traitement des données
 [handles.voisement, handles.lieu, handles.mode]=trans_info(handles.mat);
 
-handles.output=struct('results',[handles.perf handles.voisement handles.lieu handles.mode],'mat',handles.mat);
+% Store trial-specific data in a structure
+sequence.targetNames = handles.TargetSeq;
+sequence.maskerNames = handles.MaskerSeq;
+sequence.targetCat = handles.Table(2,:);
+sequence.maskerCat = handles.Table(5,:);
+sequence.respCat = handles.Table(4,:);
+
+handles.output=struct('results',[handles.perf handles.voisement handles.lieu handles.mode],'mat',handles.mat,'sequence',sequence);
 sound((handles.bip ./ max(sqrt(mean(handles.bip.^2)))) ./ handles.Scale, 22050);
 
 
