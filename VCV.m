@@ -65,7 +65,7 @@ function varargout = VCV(varargin)
 %  redraw random masker if necessary until it is from a different category
 %  as the target.
 %
-% 18-Oct-2021 - (1) Modified the way target and masker are compared after
+% 18-Nov-2021 - (1) Modified the way target and masker are compared after
 % randomly drawing masker, now using helper function stim2num, for
 % consistency; (2) Now storing more data to handles during
 % routine_stimulus: sequence of target file names (handles.TargetSeq),
@@ -127,8 +127,8 @@ handles.NbSelect = 48;
 handles.Factor = 10^(-(handles.Parametres.RSB/20));
 handles.Essai = 0;
 handles.Table = zeros(5,handles.NbSelect);
-handles.TargetSeq = cell(1,handles.NbSelect); % 18-Oct-2021 - DA
-handles.MaskerSeq = cell(1,handles.NbSelect); % 18-Oct-2021 - DA
+handles.TargetSeq = cell(1,handles.NbSelect); % 18-Nov-2021 - DA
+handles.MaskerSeq = cell(1,handles.NbSelect); % 18-Nov-2021 - DA
 handles.ontour = 0;
 handles.bip = audioread('ding.wav');
 [handles.a, handles.b]=butter(6,8000/(0.5*handles.Fs)); % lowpass filtering at 36 dB/oct, fc=5kHz

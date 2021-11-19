@@ -36,7 +36,7 @@ function varargout = intellitest(varargin)
 % maskers are selected in BruitSelect_SelectionChangeFcn and in routine_VCV
 % functions - DA
 %
-% 18-Oct-2021 - Now saving trial-specific data to disk in the case of
+% 18-Nov-2021 - Now saving trial-specific data to disk in the case of
 % consonant material: storing the new field 'sequence' of the output
 % structure of VCV.m as an additional field of handles with the same name,
 % in routine_VCV; then appending this as a new field 'Sequence' of the
@@ -1083,7 +1083,7 @@ out=VCV(handles.Parametres);
 set(handles.TextPerf,'String',['Score:  ',num2str(RAUCorr(out.results(1)),'%6.2f'),'%']);
 set(handles.TextVLM,'String',strvcat(['Voisement:  ',num2str(out.results(2),'%6.2f'),'%'], ['Lieu:            ',num2str(out.results(3),'%6.2f'),'%'], ['Mode:          ',num2str(out.results(4),'%6.2f'),'%']));
 handles.VCVp=out.results(1);handles.VCVv=out.results(2);handles.VCVl=out.results(3);handles.VCVm=out.results(4);handles.VCVmat=out.mat;
-handles.sequence = out.sequence; % storing trial-specific data as additional information - 18-Oct-2021 - DA
+handles.sequence = out.sequence; % storing trial-specific data as additional information - 18-Nov-2021 - DA
 
 function handles=routine_CVC(handles)
 ssn=strcat(handles.BType,'_V.wav');
