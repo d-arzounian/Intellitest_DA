@@ -194,7 +194,7 @@ if handles.Parametres.TobiiRec
     % Get Eyetracker
     clear TobiiSDK
     TobiiSDK.Tobii = EyeTrackingOperations();
-    eyetracker_address = 'tet-tcp://169.254.159.211'; %'tet-tcp://172.28.195.1';
+    eyetracker_address = 'tet-tcp://169.254.197.88';%'tet-tcp://169.254.159.211'; %'tet-tcp://172.28.195.1';
     TobiiSDK.eyetracker = TobiiSDK.Tobii.get_eyetracker(eyetracker_address);
     if isa(TobiiSDK.eyetracker,'EyeTracker')
         disp(['Address:',TobiiSDK.eyetracker.Address]);
