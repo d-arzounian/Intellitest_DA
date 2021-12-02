@@ -1,4 +1,4 @@
-function varargout = VCV(varargin)
+    function varargout = VCV(varargin)
 % VCV M-file for VCV.fig
 %      VCV, by itself, creates a new VCV or raises the existing
 %      singleton*.
@@ -75,6 +75,9 @@ function varargout = VCV(varargin)
 % output as fields of a substructure 'sequence' of handles.output, by
 % routine_output. TO DO: use these new fields in intellitest.m to save the
 % data to disk !! Initialize TargetSeq and MaskerSeq?
+%
+% 2 Dec. 2021 - Automatically setting eyetracker address based on detected
+% eyetrackers - DA
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -193,19 +196,42 @@ if handles.Parametres.TobiiRec
 
     % Get Eyetracker
     clear TobiiSDK
-    TobiiSDK.Tobii = EyeTrackingOperations();
-    eyetracker_address = 'tet-tcp://169.254.197.88';%'tet-tcp://169.254.159.211'; %'tet-tcp://172.28.195.1';
-    TobiiSDK.eyetracker = TobiiSDK.Tobii.get_eyetracker(eyetracker_address);
-    if isa(TobiiSDK.eyetracker,'EyeTracker')
-        disp(['Address:',TobiiSDK.eyetracker.Address]);
-        disp(['Name:',TobiiSDK.eyetracker.Name]);
-        disp(['Serial Number:',TobiiSDK.eyetracker.SerialNumber]);
-        disp(['Model:',TobiiSDK.eyetracker.Model]);
-        disp(['Firmware Version:',TobiiSDK.eyetracker.FirmwareVersion]);
-        disp(['Runtime Version:',TobiiSDK.eyetracker.RuntimeVersion]);
+    TobiiSDK.Tobii = EyeTrackingOperations();   
+    AllEyetrackers = TobiiSDK.Tobii.find_all_eyetrackers();
+    if isempty(AllEyetrackers)
+        % Show message and abort    
+        warndlg({'Aucun oculomètre détecté.',... % uialert doesn't work because hObject.Visible is off?
+                    'Vérifier les branchements et que l''appareil est allumé,.',...
+                    'ou bien lancer une mesure sans oculométrie'},...
+                    'No eyetracker found','modal'); 
+        handles.Parametres.TobiiRec = false;
+%         VCV_OutputFcn(hObject, eventdata, handles) 
+        delete(hObject);
+%         uiresume(handles.figure1);
+        return
     else
-        disp('Eye tracker not found!');
-    end           
+        if any(size(AllEyetrackers)>1)
+            warndlg({'Plusieurs oculomètres ont été détectés.',...
+                        sprintf('Matlab communiquera avec %s (adresse %s)',...
+                        AllEyetrackers(1).Name, AllEyetrackers(1).Address)},...
+                    'Multiple eyetrackers found','modal'); 
+        end
+        TobiiSDK.eyetracker = TobiiSDK.Tobii.get_eyetracker(AllEyetrackers(1).Address);
+        if isa(TobiiSDK.eyetracker,'EyeTracker')
+            disp(['Address:',TobiiSDK.eyetracker.Address]);
+            disp(['Name:',TobiiSDK.eyetracker.Name]);
+            disp(['Serial Number:',TobiiSDK.eyetracker.SerialNumber]);
+            disp(['Model:',TobiiSDK.eyetracker.Model]);
+            disp(['Firmware Version:',TobiiSDK.eyetracker.FirmwareVersion]);
+            disp(['Runtime Version:',TobiiSDK.eyetracker.RuntimeVersion]);
+        else
+            disp('Eye tracker not found!');
+        end  
+    end
+
+    
+    
+         
 
     % Initialize event count
     TobiiSDK.EventCount = 0;
