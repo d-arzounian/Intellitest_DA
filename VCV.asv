@@ -75,9 +75,6 @@ function varargout = VCV(varargin)
 % output as fields of a substructure 'sequence' of handles.output, by
 % routine_output. TO DO: use these new fields in intellitest.m to save the
 % data to disk !! Initialize TargetSeq and MaskerSeq?
-%
-% 2 Dec. 2021 - Automatically setting eyetracker address based on detected
-% eyetrackers - DA
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -205,9 +202,9 @@ if handles.Parametres.TobiiRec
                     'ou bien lancer une mesure sans oculométrie'},...
                     'No eyetracker found','modal'); 
         handles.Parametres.TobiiRec = false;
-%         VCV_OutputFcn(hObject, eventdata, handles) 
-        delete(hObject);
-%         uiresume(handles.figure1);
+        handles = routine_output(handles);
+        guidata(hObject0, handles);
+        uiresume(handles.figure1);
         return
     else
         if any(size(AllEyetrackers)>1)
