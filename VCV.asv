@@ -81,11 +81,8 @@
 %
 % 7 Dec. 2021 - Added 500-ms pre- and post-signal silences to avoid
 % artifacts (glitchs/distortions). I therefore extended the post-playback
-% command pause from 1.5s to 2.5s, and also reduced the pre-playback and
-% additional post-playback pauses in the pupillometry case from 2s to 1.5s
-% and from 6s to 5.5s, respectively. Overall, the trial duration is
-% theoretically extended by 500 ms in the no-pupillometry case, unchanged
-% in the pupillometry case.
+% command pause from 1.5s to 2s, and also reduced the pre-playback pause in
+% the pupillometry case from 2s to 1.5s. Overall, the trial
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -733,9 +730,9 @@ if handles.Parametres.TobiiRec
     % Also save time stamp after playback command?
     handles.TobiiSDK.StimulusPostOnsetSystemTime(handles.TobiiSDK.EventCount) = handles.TobiiSDK.Tobii.get_system_time_stamp;    
     % Extend pause to allow recording of pupil response
-    pause(5.5)
+    pause(6)
 end % pupil recording option test
-pause(2.5);
+pause(2);
 
 handles = ShowButtonPannel(handles);
 
